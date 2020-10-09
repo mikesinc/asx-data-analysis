@@ -1,0 +1,13 @@
+#ignore these files
+
+config.py
+/data
+/driver_extensions
+/screen
+/env
+__pycache__
+*.xlsm
+*.zip
+*.exe
+*.log
+*.csv
