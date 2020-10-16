@@ -79,10 +79,11 @@ class MainApplication:
         self.dtreescrollx.pack(side="bottom", fill="x")
         self.dtreescrolly.pack(side="right", fill="y")
         #Define and format columns
-        self.detailTv["columns"] = ("", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019")
+        self.detailTv["columns"] = ("Item", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019")
         self.detailTv.column("#0", width=0, stretch=False)
         for column in self.detailTv["columns"]:
-            self.detailTv.column(column, width=10)
+            self.detailTv.column(column, width=50)
+        self.detailTv.column("Item", width=250)
         #Create headings
         self.detailTv.heading("#0", text="")
         for column in self.detailTv["columns"]:
@@ -119,6 +120,51 @@ class MainApplication:
             sys.exit()
 
     def getDetails(self):
+        #Get History
+        try:
+            database = pd.read_csv(os.getcwd() + '\\data\\database.csv') 
+            countd = 0
+            keywords = ['EBITDA',
+                    'EBIT',
+                    'L/T Debt',
+                    'S/T debt',
+                    'Market cap ',
+                    'Dividends (¢)',
+                    'Dividend yield (%)',
+                    'Revenues ',
+                    'Net profit ',
+                    'Net profit margin(%)',
+                    'Capital spending (¢)',
+                    'Cash on hand',
+                    'Net operating cashflows ',
+                    'Net investing cashflows ',
+                    'Net financing cashflows ',
+                    'Cash flow (¢)',
+                    'Earnings pre abs (¢)',
+                    'Book value ($)',
+                    'Average annual P/E ratio (%)',
+                    'Relative P/E (%)',
+                    'Total return (%)',
+                    'Depreciation ',
+                    'Amortisation ',
+                    'Income tax rate (%)',
+                    'Employees (thousands)',
+                    'Shareholders equity',
+                    'Return on capital (%)',
+                    'Return on equity (%)',
+                    'Payout ratio (%)',
+                    'Shares outstanding ']
+            for row in database.to_numpy():
+                if self.tickerEntry.get() in row[0]:
+                    for keyword in keywords:
+                        if self.tickerEntry.get() + " " + keyword == row[0]:
+                            self.detailTv.insert(parent="", index="end", iid=countd, text="", values=[value for value in row])
+                            countd += 1
+        except:
+            print(f"Something went getting historical data for {self.tickerEntry.get()}!")
+            input()
+            sys.exit()
+
         # initialise driver
         print("....LOADING: Starting Web Driver...")
         options = Options()
@@ -173,49 +219,6 @@ class MainApplication:
         except:
             print(f"Something went wrong scraping {self.tickerEntry.get()} info!")
             driver.quit()
-            input()
-            sys.exit()
-
-        #Get History
-        try:
-            database = pd.read_csv(os.getcwd() + '\\data\\database.csv', index_col=0) 
-            countd = 0
-            keywords = ['EDBITDA',
-                    'EBIT',
-                    'L/T debt',
-                    'S/T debt',
-                    'Market Cap ',
-                    'Dividends (¢)',
-                    'Dividend yield (%)',
-                    'Revenues ',
-                    'Net profit ',
-                    'Net profit margin(%)',
-                    'Capital spending (¢)',
-                    'Cash on hand',
-                    'Net operating cashflows ',
-                    'Net investing cashflows ',
-                    'Net financing cashflows ',
-                    'Cash flow (¢)',
-                    'Earnings pre abs (¢)',
-                    'Book value ($)',
-                    'Average annual P/E ratio (%)',
-                    'Relative P/E (%)',
-                    'Total return (%)',
-                    'Depreciation ',
-                    'Amortisation ',
-                    'Income tax rate (%)',
-                    'Employees (thousands)',
-                    'Shareholders equity',
-                    'Return on capital (%)',
-                    'Return on equity (%)',
-                    'Payout ratio (%)',
-                    'Shares outstanding ']
-            for entry in database.iterrows():
-                if self.tickerEntry.get() in entry[0] and entry[0].split(" ")[1] in keywords:
-                    self.detailTv.insert(parent="", index="end", iid=countd, text="", values=[entry])
-                    countd += 1
-        except:
-            print(f"Something went getting historical data for {self.tickerEntry.get()}!")
             input()
             sys.exit()
 
