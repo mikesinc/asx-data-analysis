@@ -12,6 +12,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import os
 from bs4 import BeautifulSoup
+import numpy as np
 
 class MainApplication:
     def __init__(self, master):
@@ -37,14 +38,14 @@ class MainApplication:
         #Buttons
         self.trendButton = ttk.Button(self.inputFrame, text='Plot Stock Price', width=20, command=self.plotTrends)
         self.trendButton.grid(row=1, column=0)
-        self.stockButton = ttk.Button(self.inputFrame, text='Update Data', width=20, command=self.getDetails) #add command
+        self.stockButton = ttk.Button(self.inputFrame, text='Update Data', width=20, command=self.getDetails)
         self.stockButton.grid(row=2, column=0)
-        self.quitButton = ttk.Button(self.inputFrame, text='Quit', width=10, command=self.master.destroy) #add command
+        self.quitButton = ttk.Button(self.inputFrame, text='Quit', width=10, command=self.master.destroy)
         self.quitButton.place(relx=0.9)
 
         # Frame for Treeview (info)
         self.infoFrame = ttk.LabelFrame(self.tabBook, text="Stock Summary")
-        self.infoFrame.place(height=400, width=640, rely=0.12)
+        self.infoFrame.place(height=370, width=640, rely=0.12)
         #Treeview widget
         self.infoTv = ttk.Treeview(self.infoFrame)
         self.infoTv.place(relheight=1, relwidth=1)
@@ -65,11 +66,33 @@ class MainApplication:
 
         #Frame for Estimates (calculations)
         self.estimateFrame = ttk.LabelFrame(self.tabBook, text="Estimated forward values")
-        self.estimateFrame.place(height=400, width=640, rely=0.12, relx=0.5)
+        self.estimateFrame.place(height=370, width=640, rely=0.12, relx=0.5)
+
+        #Frame for KPIs (Selected info from database)
+        self.keyPerformanceFrame = ttk.LabelFrame(self.tabBook, text="Key Performance Indicators")
+        self.keyPerformanceFrame.place(height=165, width=1280, rely=0.5)
+        #Treeview widget
+        self.keyPerformanceTv = ttk.Treeview(self.keyPerformanceFrame)
+        self.keyPerformanceTv.place(relheight=1, relwidth=1)
+        self.dtreescrolly = ttk.Scrollbar(self.keyPerformanceFrame, orient="vertical", command=self.keyPerformanceTv.yview)
+        self.dtreescrollx = ttk.Scrollbar(self.keyPerformanceFrame, orient="horizontal", command=self.keyPerformanceTv.xview)
+        self.keyPerformanceTv.configure(xscrollcommand=self.dtreescrollx.set, yscrollcommand=self.dtreescrolly.set)
+        self.dtreescrollx.pack(side="bottom", fill="x")
+        self.dtreescrolly.pack(side="right", fill="y")
+        #Define and format columns
+        self.keyPerformanceTv["columns"] = ("Item", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019")
+        self.keyPerformanceTv.column("#0", width=0, stretch=False)
+        for column in self.keyPerformanceTv["columns"]:
+            self.keyPerformanceTv.column(column, width=50)
+        self.keyPerformanceTv.column("Item", width=250)
+        #Create headings
+        self.keyPerformanceTv.heading("#0", text="")
+        for column in self.keyPerformanceTv["columns"]:
+            self.keyPerformanceTv.heading(column, text=column, anchor="w")
 
         #Frame for Details (Extended info from database)
         self.detailsFrame = ttk.LabelFrame(self.tabBook, text="Historical Performance")
-        self.detailsFrame.place(height=420, width=1280, rely=0.55)
+        self.detailsFrame.place(height=300, width=1280, rely=0.67)
         #Treeview widget
         self.detailTv = ttk.Treeview(self.detailsFrame)
         self.detailTv.place(relheight=1, relwidth=1)
@@ -124,6 +147,8 @@ class MainApplication:
         try:
             database = pd.read_csv(os.getcwd() + '\\data\\database.csv') 
             countd = 0
+            keyPerformanceIndicators = ['EBITDA', 'L/T Debt', 'Market cap ', 'Cash on hand', 'Dividends (¢)', 'Shares outstanding ', 'S/T debt']
+            keyPerformanceIndicatorDict = {}
             keywords = ['EBITDA',
                     'EBIT',
                     'L/T Debt',
@@ -159,9 +184,30 @@ class MainApplication:
                     for keyword in keywords:
                         if self.tickerEntry.get() + " " + keyword == row[0]:
                             self.detailTv.insert(parent="", index="end", iid=countd, text="", values=[value for value in row])
+                            #check for KPI treeview
+                            if keyword in keyPerformanceIndicators:
+                                keyPerformanceIndicatorDict[keyword] = np.array(list(row)[1:]).astype(float)
                             countd += 1
         except:
-            print(f"Something went getting historical data for {self.tickerEntry.get()}!")
+            print(f"Something went wrong getting historical data for {self.tickerEntry.get()}!")
+            input()
+            sys.exit()
+
+        # Calculate KPIs
+        try:
+            keyPerformanceIndicatorList = []
+            keyPerformanceIndicatorList.append(['Cash Yield'] + list(np.round(keyPerformanceIndicatorDict['EBITDA'] / (keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['Market cap ']) * 100, 2)))
+            keyPerformanceIndicatorList.append(['EV Multiple'] + list(np.round((keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['Market cap '] - keyPerformanceIndicatorDict['Cash on hand']) / keyPerformanceIndicatorDict['EBITDA'], 1)))
+            keyPerformanceIndicatorList.append(['Dividends paid ($M)'] + list(np.round(keyPerformanceIndicatorDict['Dividends (¢)'] * keyPerformanceIndicatorDict['Shares outstanding '] / 100, 1)))
+            keyPerformanceIndicatorList.append(['% EBDITA'] + list(np.round((keyPerformanceIndicatorDict['Dividends (¢)'] * keyPerformanceIndicatorDict['Shares outstanding '] / 100) / keyPerformanceIndicatorDict['EBITDA'] * 100, 0)))
+            keyPerformanceIndicatorList.append(['Net Debt : EBITDA'] + list(np.round((keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['S/T debt'] - keyPerformanceIndicatorDict['Cash on hand']) / keyPerformanceIndicatorDict['EBITDA'], 1)))
+            
+            countk = 0
+            for kpi in keyPerformanceIndicatorList:
+                self.keyPerformanceTv.insert(parent="", index="end", iid=countk, text="", values=[value for value in kpi])
+                countk += 1
+        except:
+            print(f"Something went wrong getting KPIs for {self.tickerEntry.get()}!")
             input()
             sys.exit()
 
@@ -206,8 +252,6 @@ class MainApplication:
                     detailDictionary[item.find('h3').text] = item.find('span').text
             if detailDictionary['\xa0Company Profile']:
                 del detailDictionary['\xa0Company Profile']
-            if detailDictionary['Equity Style Box']:
-                del detailDictionary['Equity Style Box']
             detailDictionary['Market Cap'].replace("\xa0", "").replace(",", "").replace("M", "000000").replace("B", "000000000")
             #Populate Tkinter treeview
             count = 0
