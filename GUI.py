@@ -67,6 +67,109 @@ class MainApplication:
         #Frame for Estimates (calculations)
         self.estimateFrame = ttk.LabelFrame(self.tabBook, text="Estimated forward values")
         self.estimateFrame.place(height=370, width=640, rely=0.12, relx=0.5)
+        #Calc button
+        self.calcButton = ttk.Button(self.estimateFrame, text='Calculate Estimates', width=20, command=self.runEstimate) #add command to update text of calc labels
+        self.calcButton.grid(row=0, column=2)
+        #Entry fields
+        self.ebitdaLabel = tk.Label(self.estimateFrame, width=20, text="EBITDA ($M)", anchor="w")
+        self.ebitdaLabel.grid(row=0, column=0)
+        self.ebitdaEntry = tk.Entry(self.estimateFrame, width=20)
+        self.ebitdaEntry.grid(row=0, column=1)
+        self.sharesOutstandingLabel = tk.Label(self.estimateFrame, width=20, text="Shares Outstanding (M)", anchor="w")
+        self.sharesOutstandingLabel.grid(row=1, column=0)
+        self.sharesOutstandingEntry = tk.Entry(self.estimateFrame, width=20)
+        self.sharesOutstandingEntry.grid(row=1, column=1)
+        self.longDebtLabel = tk.Label(self.estimateFrame, width=20, text="L/T Debt ($M)", anchor="w")
+        self.longDebtLabel.grid(row=2, column=0)
+        self.longDebtEntry = tk.Entry(self.estimateFrame, width=20)
+        self.longDebtEntry.grid(row=2, column=1)
+        self.cashLabel = tk.Label(self.estimateFrame, width=20, text="Cash on hand ($M)", anchor="w")
+        self.cashLabel.grid(row=3, column=0)
+        self.cashEntry = tk.Entry(self.estimateFrame, width=20)
+        self.cashEntry.grid(row=3, column=1)
+        self.percentEbitdaLabel = tk.Label(self.estimateFrame, width=20, text="% EBITDA", anchor="w")
+        self.percentEbitdaLabel.grid(row=4, column=0)
+        self.percentEbitdaEntry = tk.Entry(self.estimateFrame, width=20)
+        self.percentEbitdaEntry.grid(row=4, column=1)
+        self.blankspacer = tk.Label(self.estimateFrame, width=20)
+        self.blankspacer.grid(row=5, column=0)
+        #Calculated values
+        self.medianPriceLabel = tk.Label(self.estimateFrame, width=20, text="Median Price", anchor="w")
+        self.medianPriceLabel.grid(row=6, column=0)
+        self.medianPriceCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
+        self.medianPriceCalc.grid(row=6, column=1)
+        self.averagePriceLabel = tk.Label(self.estimateFrame, width=20, text="Average Price", anchor="w")
+        self.averagePriceLabel.grid(row=7, column=0)
+        self.averagePriceCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
+        self.averagePriceCalc.grid(row=7, column=1)
+        self.minPriceLabel = tk.Label(self.estimateFrame, width=20, text="Minimum Price", anchor="w")
+        self.minPriceLabel.grid(row=8, column=0)
+        self.minPriceCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
+        self.minPriceCalc.grid(row=8, column=1)
+        self.maxPriceLabel = tk.Label(self.estimateFrame, width=20, text="Maximum Price", anchor="w")
+        self.maxPriceLabel.grid(row=9, column=0)
+        self.maxPriceCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
+        self.maxPriceCalc.grid(row=9, column=1)
+        self.divPaidLabel = tk.Label(self.estimateFrame, width=20, text="Dividends Paid ($M)", anchor="w")
+        self.divPaidLabel.grid(row=10, column=0)
+        self.divPaidCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
+        self.divPaidCalc.grid(row=10, column=1)
+        self.medianYieldLabel = tk.Label(self.estimateFrame, width=20, text="Median Yield", anchor="w")
+        self.medianYieldLabel.grid(row=11, column=0)
+        self.medianYieldCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
+        self.medianYieldCalc.grid(row=11, column=1)
+        self.averageYieldLabel = tk.Label(self.estimateFrame, width=20, text="Average Yield", anchor="w")
+        self.averageYieldLabel.grid(row=12, column=0)
+        self.averageYieldCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
+        self.averageYieldCalc.grid(row=12, column=1)
+        self.minYieldLabel = tk.Label(self.estimateFrame, width=20, text="Minimum Yield", anchor="w")
+        self.minYieldLabel.grid(row=13, column=0)
+        self.minYieldCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
+        self.minYieldCalc.grid(row=13, column=1)
+        self.maxYieldLabel = tk.Label(self.estimateFrame, width=20, text="Maximum Yield", anchor="w")
+        self.maxYieldLabel.grid(row=14, column=0)
+        self.maxYieldCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
+        self.maxYieldCalc.grid(row=14, column=1)
+        self.assessedDivLabel = tk.Label(self.estimateFrame, width=20, text="Assessed Dividend", anchor="w")
+        self.assessedDivLabel.grid(row=15, column=0)
+        self.assessedDivCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
+        self.assessedDivCalc.grid(row=15, column=1)
+        #averaged values
+        self.cashYieldLabel = tk.Label(self.estimateFrame, width=10, text="Cash Yield")
+        self.cashYieldLabel.grid(row=5, column=3)
+        self.evLabel = tk.Label(self.estimateFrame, width=10, text="EV Multiple")
+        self.evLabel.grid(row=5, column=4)
+
+        self.medianValueLabel = tk.Label(self.estimateFrame, width=10, text="Median Value", anchor="w")
+        self.medianValueLabel.grid(row=6, column=2)
+        self.medianValueCashCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
+        self.medianValueCashCalc.grid(row=6, column=3)
+        self.medianValueEvCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
+        self.medianValueEvCalc.grid(row=6, column=4)
+        self.meanValueLabel = tk.Label(self.estimateFrame, width=10, text="Mean Value", anchor="w")
+        self.meanValueLabel.grid(row=7, column=2)
+        self.meanValueCashCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
+        self.meanValueCashCalc.grid(row=7, column=3)
+        self.meanValueEvCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
+        self.meanValueEvCalc.grid(row=7, column=4)
+        self.stdValueLabel = tk.Label(self.estimateFrame, width=10, text="Std. Dev.", anchor="w")
+        self.stdValueLabel.grid(row=8, column=2)
+        self.stdValueCashCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
+        self.stdValueCashCalc.grid(row=8, column=3)
+        self.stdValueEvCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
+        self.stdValueEvCalc.grid(row=8, column=4)
+        self.minValueLabel = tk.Label(self.estimateFrame, width=10, text="Min. value", anchor="w")
+        self.minValueLabel.grid(row=9, column=2)
+        self.minValueCashCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
+        self.minValueCashCalc.grid(row=9, column=3)
+        self.minValueEvCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
+        self.minValueEvCalc.grid(row=9, column=4)
+        self.maxValueLabel = tk.Label(self.estimateFrame, width=10, text="Max. value", anchor="w")
+        self.maxValueLabel.grid(row=10, column=2)
+        self.maxValueCashCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
+        self.maxValueCashCalc.grid(row=10, column=3)
+        self.maxValueEvCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
+        self.maxValueEvCalc.grid(row=10, column=4)
 
         #Frame for KPIs (Selected info from database)
         self.keyPerformanceFrame = ttk.LabelFrame(self.tabBook, text="Key Performance Indicators")
@@ -121,6 +224,16 @@ class MainApplication:
         self.screenFrame = ttk.LabelFrame(self.tabBook, text="Screening Tool")
         self.screenFrame.place(relheight=1, relwidth=1)
         self.tabBook.add(self.screenFrame, text="Screening Tool")
+
+    def runEstimate(self):
+        ebitda = float(self.ebitdaEntry.get())
+        sharesOutstanding = float(self.sharesOutstandingEntry.get())
+        longDebt = float(self.longDebtEntry.get())
+        cashOnHand = float(self.cashEntry.get())
+        percentEbitda = float(self.percentEbitdaEntry.get())
+
+        # self.medianPriceCalc.config(text=(ebitda*sharesOutstanding-longDebt+cashOnHand)/sharesOutstanding)
+        # self.averagePriceCalc.config(text=(ebitda*sharesOutstanding-longDebt+cashOnHand)/sharesOutstanding)
 
     def plotTrends(self):
         sheetDict = {'historical price - max': '1d', 'historical price - 5y': '1d', 'historical price - 1y': '1d', 'historical price - 6mo': '1d', 'historical price - 3mo': '1d', 'historical price - 1mo': '1d', 'historical price - 5d': '60m', 'historical price - 1d': '1m'}    
@@ -196,12 +309,25 @@ class MainApplication:
         # Calculate KPIs
         try:
             keyPerformanceIndicatorList = []
-            keyPerformanceIndicatorList.append(['Cash Yield'] + list(np.round(keyPerformanceIndicatorDict['EBITDA'] / (keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['Market cap ']) * 100, 2)))
-            keyPerformanceIndicatorList.append(['EV Multiple'] + list(np.round((keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['Market cap '] - keyPerformanceIndicatorDict['Cash on hand']) / keyPerformanceIndicatorDict['EBITDA'], 1)))
-            keyPerformanceIndicatorList.append(['Dividends paid ($M)'] + list(np.round(keyPerformanceIndicatorDict['Dividends (¢)'] * keyPerformanceIndicatorDict['Shares outstanding '] / 100, 1)))
-            keyPerformanceIndicatorList.append(['% EBDITA'] + list(np.round((keyPerformanceIndicatorDict['Dividends (¢)'] * keyPerformanceIndicatorDict['Shares outstanding '] / 100) / keyPerformanceIndicatorDict['EBITDA'] * 100, 0)))
-            keyPerformanceIndicatorList.append(['Net Debt : EBITDA'] + list(np.round((keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['S/T debt'] - keyPerformanceIndicatorDict['Cash on hand']) / keyPerformanceIndicatorDict['EBITDA'], 1)))
+            cashYieldList = ['EBITDA', 'L/T Debt', 'Market cap ']
+            eVMultipleList = ['L/T Debt', 'Market cap ', 'Cash on hand']
+            dividendsPaidList = ['Dividends (¢)', 'Shares outstanding ']
+            percentEbitdaList = ['Dividends (¢)', 'Shares outstanding ', 'EBITDA']
+            netDebtRatioList = ['L/T Debt', 'S/T debt', 'Cash on hand', 'EBITDA']
+
+            if all(item in keyPerformanceIndicatorDict for item in cashYieldList):
+                keyPerformanceIndicatorList.append(['Cash Yield'] + list(np.round(keyPerformanceIndicatorDict['EBITDA'] / (keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['Market cap ']) * 100, 2)))
+            if all(item in keyPerformanceIndicatorDict for item in eVMultipleList):
+                keyPerformanceIndicatorList.append(['EV Multiple'] + list(np.round((keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['Market cap '] - keyPerformanceIndicatorDict['Cash on hand']) / keyPerformanceIndicatorDict['EBITDA'], 1)))
+            if all(item in keyPerformanceIndicatorDict for item in dividendsPaidList):
+                keyPerformanceIndicatorList.append(['Dividends paid ($M)'] + list(np.round(keyPerformanceIndicatorDict['Dividends (¢)'] * keyPerformanceIndicatorDict['Shares outstanding '] / 100, 1)))
+            if all(item in keyPerformanceIndicatorDict for item in percentEbitdaList):
+                keyPerformanceIndicatorList.append(['% EBDITA'] + list(np.round((keyPerformanceIndicatorDict['Dividends (¢)'] * keyPerformanceIndicatorDict['Shares outstanding '] / 100) / keyPerformanceIndicatorDict['EBITDA'] * 100, 0)))
+            if all(item in keyPerformanceIndicatorDict for item in netDebtRatioList):
+                keyPerformanceIndicatorList.append(['Net Debt : EBITDA'] + list(np.round((keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['S/T debt'] - keyPerformanceIndicatorDict['Cash on hand']) / keyPerformanceIndicatorDict['EBITDA'], 1)))
             
+            print(keyPerformanceIndicatorList)
+
             countk = 0
             for kpi in keyPerformanceIndicatorList:
                 self.keyPerformanceTv.insert(parent="", index="end", iid=countk, text="", values=[value for value in kpi])
