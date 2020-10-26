@@ -13,6 +13,12 @@ from selenium.webdriver.support import expected_conditions as EC
 import os
 from bs4 import BeautifulSoup
 import numpy as np
+import statistics
+from criteriawidget import *
+from tvwidget import *
+from calcinput import *
+from calcoutput import *
+from statoutput import *
 
 class MainApplication:
     def __init__(self, master):
@@ -30,190 +36,67 @@ class MainApplication:
         self.inputFrame = ttk.LabelFrame(self.tabBook, text="User Input")
         self.inputFrame.place(width=1280) 
         self.tabBook.add(self.inputFrame, text="Details")
-        # Lables
-        self.ASXLabel = tk.Label(self.inputFrame, text="ASX ticker")
-        self.ASXLabel.grid(row=0, column=1)
+        #Lables
+        tk.Label(self.inputFrame, text="ASX ticker", width=20, anchor="w").grid(row=0, column=1)
         self.tickerEntry = tk.Entry(self.inputFrame, width=20)
         self.tickerEntry.grid(row=0, column=0)
         #Buttons
-        self.trendButton = ttk.Button(self.inputFrame, text='Plot Stock Price', width=20, command=self.plotTrends)
-        self.trendButton.grid(row=1, column=0)
-        self.stockButton = ttk.Button(self.inputFrame, text='Update Data', width=20, command=self.getDetails)
-        self.stockButton.grid(row=2, column=0)
-        self.quitButton = ttk.Button(self.inputFrame, text='Quit', width=10, command=self.master.destroy)
-        self.quitButton.place(relx=0.9)
+        ttk.Button(self.inputFrame, text='Plot Stock Price', width=20, command=self.plotTrends).grid(row=1, column=0)
+        ttk.Button(self.inputFrame, text='Refresh Daily Data', width=20, command=self.getDailyDetails).grid(row=2, column=1)
+        ttk.Button(self.inputFrame, text='Show Data for listing', width=20, command=self.getDetails).grid(row=2, column=0)
+        ttk.Button(self.inputFrame, text='Quit', width=10, command=self.master.destroy).place(relx=0.9)
 
         # Frame for Treeview (info)
         self.infoFrame = ttk.LabelFrame(self.tabBook, text="Stock Summary")
         self.infoFrame.place(height=370, width=640, rely=0.12)
         #Treeview widget
-        self.infoTv = ttk.Treeview(self.infoFrame)
-        self.infoTv.place(relheight=1, relwidth=1)
-        self.treescrolly = ttk.Scrollbar(self.infoFrame, orient="vertical", command=self.infoTv.yview)
-        self.treescrollx = ttk.Scrollbar(self.infoFrame, orient="horizontal", command=self.infoTv.xview)
-        self.infoTv.configure(xscrollcommand=self.treescrollx.set, yscrollcommand=self.treescrolly.set)
-        self.treescrollx.pack(side="bottom", fill="x")
-        self.treescrolly.pack(side="right", fill="y")
-        #Define and format columns
-        self.infoTv["columns"] = ("Item", "Value")
-        self.infoTv.column("#0", width=0, stretch=False)
-        self.infoTv.column("Item")
-        self.infoTv.column("Value")
-        #Create headings
-        self.infoTv.heading("#0", text="")
-        self.infoTv.heading("Item", text="Item", anchor="w")
-        self.infoTv.heading("Value", text="Value", anchor="w")
+        self.infoTv = tvwidget(frame=self.infoFrame, relheight=1, relwidth=1, columns=("Item", "Value"))
 
         #Frame for Estimates (calculations)
         self.estimateFrame = ttk.LabelFrame(self.tabBook, text="Estimated forward values")
         self.estimateFrame.place(height=370, width=640, rely=0.12, relx=0.5)
         #Calc button
-        self.calcButton = ttk.Button(self.estimateFrame, text='Calculate Estimates', width=20, command=self.runEstimate) #add command to update text of calc labels
-        self.calcButton.grid(row=0, column=2)
+        ttk.Button(self.estimateFrame, text='Calculate Estimates', width=20, command=self.runEstimate).grid(row=0, column=2)
         #Entry fields
-        self.ebitdaLabel = tk.Label(self.estimateFrame, width=20, text="EBITDA ($M)", anchor="w")
-        self.ebitdaLabel.grid(row=0, column=0)
-        self.ebitdaEntry = tk.Entry(self.estimateFrame, width=20)
-        self.ebitdaEntry.grid(row=0, column=1)
-        self.sharesOutstandingLabel = tk.Label(self.estimateFrame, width=20, text="Shares Outstanding (M)", anchor="w")
-        self.sharesOutstandingLabel.grid(row=1, column=0)
-        self.sharesOutstandingEntry = tk.Entry(self.estimateFrame, width=20)
-        self.sharesOutstandingEntry.grid(row=1, column=1)
-        self.longDebtLabel = tk.Label(self.estimateFrame, width=20, text="L/T Debt ($M)", anchor="w")
-        self.longDebtLabel.grid(row=2, column=0)
-        self.longDebtEntry = tk.Entry(self.estimateFrame, width=20)
-        self.longDebtEntry.grid(row=2, column=1)
-        self.cashLabel = tk.Label(self.estimateFrame, width=20, text="Cash on hand ($M)", anchor="w")
-        self.cashLabel.grid(row=3, column=0)
-        self.cashEntry = tk.Entry(self.estimateFrame, width=20)
-        self.cashEntry.grid(row=3, column=1)
-        self.percentEbitdaLabel = tk.Label(self.estimateFrame, width=20, text="% EBITDA", anchor="w")
-        self.percentEbitdaLabel.grid(row=4, column=0)
-        self.percentEbitdaEntry = tk.Entry(self.estimateFrame, width=20)
-        self.percentEbitdaEntry.grid(row=4, column=1)
-        self.blankspacer = tk.Label(self.estimateFrame, width=20)
-        self.blankspacer.grid(row=5, column=0)
-        #Calculated values
-        self.medianPriceLabel = tk.Label(self.estimateFrame, width=20, text="Median Price", anchor="w")
-        self.medianPriceLabel.grid(row=6, column=0)
-        self.medianPriceCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
-        self.medianPriceCalc.grid(row=6, column=1)
-        self.averagePriceLabel = tk.Label(self.estimateFrame, width=20, text="Average Price", anchor="w")
-        self.averagePriceLabel.grid(row=7, column=0)
-        self.averagePriceCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
-        self.averagePriceCalc.grid(row=7, column=1)
-        self.minPriceLabel = tk.Label(self.estimateFrame, width=20, text="Minimum Price", anchor="w")
-        self.minPriceLabel.grid(row=8, column=0)
-        self.minPriceCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
-        self.minPriceCalc.grid(row=8, column=1)
-        self.maxPriceLabel = tk.Label(self.estimateFrame, width=20, text="Maximum Price", anchor="w")
-        self.maxPriceLabel.grid(row=9, column=0)
-        self.maxPriceCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
-        self.maxPriceCalc.grid(row=9, column=1)
-        self.divPaidLabel = tk.Label(self.estimateFrame, width=20, text="Dividends Paid ($M)", anchor="w")
-        self.divPaidLabel.grid(row=10, column=0)
-        self.divPaidCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
-        self.divPaidCalc.grid(row=10, column=1)
-        self.medianYieldLabel = tk.Label(self.estimateFrame, width=20, text="Median Yield", anchor="w")
-        self.medianYieldLabel.grid(row=11, column=0)
-        self.medianYieldCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
-        self.medianYieldCalc.grid(row=11, column=1)
-        self.averageYieldLabel = tk.Label(self.estimateFrame, width=20, text="Average Yield", anchor="w")
-        self.averageYieldLabel.grid(row=12, column=0)
-        self.averageYieldCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
-        self.averageYieldCalc.grid(row=12, column=1)
-        self.minYieldLabel = tk.Label(self.estimateFrame, width=20, text="Minimum Yield", anchor="w")
-        self.minYieldLabel.grid(row=13, column=0)
-        self.minYieldCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
-        self.minYieldCalc.grid(row=13, column=1)
-        self.maxYieldLabel = tk.Label(self.estimateFrame, width=20, text="Maximum Yield", anchor="w")
-        self.maxYieldLabel.grid(row=14, column=0)
-        self.maxYieldCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
-        self.maxYieldCalc.grid(row=14, column=1)
-        self.assessedDivLabel = tk.Label(self.estimateFrame, width=20, text="Assessed Dividend", anchor="w")
-        self.assessedDivLabel.grid(row=15, column=0)
-        self.assessedDivCalc = tk.Label(self.estimateFrame, width=20, anchor="w")
-        self.assessedDivCalc.grid(row=15, column=1)
-        #averaged values
-        self.cashYieldLabel = tk.Label(self.estimateFrame, width=10, text="Cash Yield")
-        self.cashYieldLabel.grid(row=5, column=3)
-        self.evLabel = tk.Label(self.estimateFrame, width=10, text="EV Multiple")
-        self.evLabel.grid(row=5, column=4)
+        self.ebitdaEntry = calcinput(self.estimateFrame, text="EBITDA ($M)", row=0, col=0)
+        self.sharesOutstandingEntry = calcinput(self.estimateFrame, text="Shares Outstanding (M)", row=1, col=0)
+        self.longDebtEntry = calcinput(self.estimateFrame, text="L/T Debt ($M)", row=2, col=0)
+        self.cashEntry = calcinput(self.estimateFrame, text="Cash on hand ($M)", row=3, col=0)
+        self.percentEbitdaEntry = calcinput(self.estimateFrame, text="% EBITDA", row=4, col=0)
+        tk.Label(self.estimateFrame, width=20).grid(row=5, column=0)
 
-        self.medianValueLabel = tk.Label(self.estimateFrame, width=10, text="Median Value", anchor="w")
-        self.medianValueLabel.grid(row=6, column=2)
-        self.medianValueCashCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
-        self.medianValueCashCalc.grid(row=6, column=3)
-        self.medianValueEvCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
-        self.medianValueEvCalc.grid(row=6, column=4)
-        self.meanValueLabel = tk.Label(self.estimateFrame, width=10, text="Mean Value", anchor="w")
-        self.meanValueLabel.grid(row=7, column=2)
-        self.meanValueCashCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
-        self.meanValueCashCalc.grid(row=7, column=3)
-        self.meanValueEvCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
-        self.meanValueEvCalc.grid(row=7, column=4)
-        self.stdValueLabel = tk.Label(self.estimateFrame, width=10, text="Std. Dev.", anchor="w")
-        self.stdValueLabel.grid(row=8, column=2)
-        self.stdValueCashCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
-        self.stdValueCashCalc.grid(row=8, column=3)
-        self.stdValueEvCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
-        self.stdValueEvCalc.grid(row=8, column=4)
-        self.minValueLabel = tk.Label(self.estimateFrame, width=10, text="Min. value", anchor="w")
-        self.minValueLabel.grid(row=9, column=2)
-        self.minValueCashCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
-        self.minValueCashCalc.grid(row=9, column=3)
-        self.minValueEvCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
-        self.minValueEvCalc.grid(row=9, column=4)
-        self.maxValueLabel = tk.Label(self.estimateFrame, width=10, text="Max. value", anchor="w")
-        self.maxValueLabel.grid(row=10, column=2)
-        self.maxValueCashCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
-        self.maxValueCashCalc.grid(row=10, column=3)
-        self.maxValueEvCalc = tk.Label(self.estimateFrame, width=10, anchor="w")
-        self.maxValueEvCalc.grid(row=10, column=4)
+        #Calculated values
+        self.medianPriceCalc = calcoutput(self.estimateFrame, text="Median Price", row=6, col=0, width=20)
+        self.averagePriceCalc = calcoutput(self.estimateFrame, text="Average Price", row=7, col=0, width=20)
+        self.minPriceCalc = calcoutput(self.estimateFrame, text="Min Price", row=8, col=0, width=20)
+        self.maxPriceCalc = calcoutput(self.estimateFrame, text="Max Price", row=9, col=0, width=20)
+        self.divPaidCalc = calcoutput(self.estimateFrame, text="Dividends Paid ($M)", row=10, col=0, width=20)
+        self.medianYieldCalc = calcoutput(self.estimateFrame, text="Median Yield", row=11, col=0, width=20)
+        self.averageYieldCalc = calcoutput(self.estimateFrame, text="Average Yield", row=12, col=0, width=20)
+        self.minYieldCalc = calcoutput(self.estimateFrame, text="Minimum Yield", row=13, col=0, width=20)
+        self.maxYieldCalc = calcoutput(self.estimateFrame, text="Maximum Yield", row=14, col=0, width=20)
+        self.assessedDivCalc = calcoutput(self.estimateFrame, text="Assessed Dividend", row=15, col=0, width=20)
+
+        #stats values
+        tk.Label(self.estimateFrame, width=10, text="Cash Yield %").grid(row=5, column=3)
+        tk.Label(self.estimateFrame, width=10, text="EV Multiple").grid(row=5, column=4)
+        self.medianValueCalc = statoutput(self.estimateFrame, text="Median Value", row=6, col=2, width=10)
+        self.meanValueCalc = statoutput(self.estimateFrame, text="Mean Value", row=7, col=2, width=10)
+        self.stdValueCalc = statoutput(self.estimateFrame, text="Std. Dev.", row=8, col=2, width=10)
+        self.minValueCalc = statoutput(self.estimateFrame, text="Min. value", row=9, col=2, width=10)
+        self.maxValueCalc = statoutput(self.estimateFrame, text="Max. value", row=10, col=2, width=10)
 
         #Frame for KPIs (Selected info from database)
         self.keyPerformanceFrame = ttk.LabelFrame(self.tabBook, text="Key Performance Indicators")
         self.keyPerformanceFrame.place(height=165, width=1280, rely=0.5)
         #Treeview widget
-        self.keyPerformanceTv = ttk.Treeview(self.keyPerformanceFrame)
-        self.keyPerformanceTv.place(relheight=1, relwidth=1)
-        self.dtreescrolly = ttk.Scrollbar(self.keyPerformanceFrame, orient="vertical", command=self.keyPerformanceTv.yview)
-        self.dtreescrollx = ttk.Scrollbar(self.keyPerformanceFrame, orient="horizontal", command=self.keyPerformanceTv.xview)
-        self.keyPerformanceTv.configure(xscrollcommand=self.dtreescrollx.set, yscrollcommand=self.dtreescrolly.set)
-        self.dtreescrollx.pack(side="bottom", fill="x")
-        self.dtreescrolly.pack(side="right", fill="y")
-        #Define and format columns
-        self.keyPerformanceTv["columns"] = ("Item", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019")
-        self.keyPerformanceTv.column("#0", width=0, stretch=False)
-        for column in self.keyPerformanceTv["columns"]:
-            self.keyPerformanceTv.column(column, width=50)
-        self.keyPerformanceTv.column("Item", width=250)
-        #Create headings
-        self.keyPerformanceTv.heading("#0", text="")
-        for column in self.keyPerformanceTv["columns"]:
-            self.keyPerformanceTv.heading(column, text=column, anchor="w")
+        self.keyPerformanceTv = tvwidget(frame=self.keyPerformanceFrame, relheight=1, relwidth=1, columns=("Item", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"), firstColWidth=250, colWidth=50)
 
         #Frame for Details (Extended info from database)
         self.detailsFrame = ttk.LabelFrame(self.tabBook, text="Historical Performance")
         self.detailsFrame.place(height=300, width=1280, rely=0.67)
         #Treeview widget
-        self.detailTv = ttk.Treeview(self.detailsFrame)
-        self.detailTv.place(relheight=1, relwidth=1)
-        self.dtreescrolly = ttk.Scrollbar(self.detailsFrame, orient="vertical", command=self.detailTv.yview)
-        self.dtreescrollx = ttk.Scrollbar(self.detailsFrame, orient="horizontal", command=self.detailTv.xview)
-        self.detailTv.configure(xscrollcommand=self.dtreescrollx.set, yscrollcommand=self.dtreescrolly.set)
-        self.dtreescrollx.pack(side="bottom", fill="x")
-        self.dtreescrolly.pack(side="right", fill="y")
-        #Define and format columns
-        self.detailTv["columns"] = ("Item", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019")
-        self.detailTv.column("#0", width=0, stretch=False)
-        for column in self.detailTv["columns"]:
-            self.detailTv.column(column, width=50)
-        self.detailTv.column("Item", width=250)
-        #Create headings
-        self.detailTv.heading("#0", text="")
-        for column in self.detailTv["columns"]:
-            self.detailTv.heading(column, text=column, anchor="w")
+        self.detailTv = tvwidget(frame=self.detailsFrame, relheight=1, relwidth=1, columns=("Item", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"), firstColWidth=250, colWidth=50)
 
         #Tab for Trend Plots
         self.trendsFrame = ttk.LabelFrame(self.tabBook, text="Plots")
@@ -225,18 +108,47 @@ class MainApplication:
         self.screenFrame.place(relheight=1, relwidth=1)
         self.tabBook.add(self.screenFrame, text="Screening Tool")
 
-    def runEstimate(self):
-        ebitda = float(self.ebitdaEntry.get())
-        sharesOutstanding = float(self.sharesOutstandingEntry.get())
-        longDebt = float(self.longDebtEntry.get())
-        cashOnHand = float(self.cashEntry.get())
-        percentEbitda = float(self.percentEbitdaEntry.get())
+        #Entry fields for screening tool
+        criteriawidget(self.screenFrame, "Market Capital ($M)", 0, 0)
+        criteriawidget(self.screenFrame, "Shares Outstanding (mil)", 4, 0)
+        criteriawidget(self.screenFrame, "Short-term debt ($M)", 8, 0)
+        criteriawidget(self.screenFrame, "Dividends (c)", 0, 3)
+        criteriawidget(self.screenFrame, "Dividend yield (%)", 4, 3)
+        criteriawidget(self.screenFrame, "EBITDA (%)", 8, 3)
+        criteriawidget(self.screenFrame, "Cash yield (%)", 0, 6)
+        criteriawidget(self.screenFrame, "Cash on hand ($M)", 4, 6)
+        criteriawidget(self.screenFrame, "Long-term debt ($M)", 8, 6)
+        criteriawidget(self.screenFrame, "Book value ($)", 0, 9)
+        criteriawidget(self.screenFrame, "EV Multiple", 4, 9)
+        criteriawidget(self.screenFrame, "Return on capital (%)", 8, 9)
+        criteriawidget(self.screenFrame, "Price/Earnings (%)", 0, 12)
+        criteriawidget(self.screenFrame, "Profit Margin(%)", 4, 12)
+        criteriawidget(self.screenFrame, "Net debt : EBITDA (ratio)", 8, 12)
 
-        # self.medianPriceCalc.config(text=(ebitda*sharesOutstanding-longDebt+cashOnHand)/sharesOutstanding)
-        # self.averagePriceCalc.config(text=(ebitda*sharesOutstanding-longDebt+cashOnHand)/sharesOutstanding)
+    def runEstimate(self):
+        self.medianPriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.medianValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry())/self.sharesOutstandingEntry.getEntry())
+        self.averagePriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.meanValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry())/self.sharesOutstandingEntry.getEntry())
+        self.minPriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.minValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry())/self.sharesOutstandingEntry.getEntry())
+        self.maxPriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.maxValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry())/self.sharesOutstandingEntry.getEntry())
+        self.divPaidCalc.changeText(text=self.ebitdaEntry.getEntry()*self.percentEbitdaEntry.getEntry()/100)
+
+        self.assessedDivCalc.changeText(text=100*self.divPaidCalc.getValue()/self.sharesOutstandingEntry.getEntry())
+        self.medianYieldCalc.changeText(text=f"{np.round(self.assessedDivCalc.getValue()/self.medianPriceCalc.getValue(), 2)} %")
+        self.averageYieldCalc.changeText(text=f"{np.round(self.assessedDivCalc.getValue()/self.averagePriceCalc.getValue(), 2)} %")
+        self.minYieldCalc.changeText(text=f"{np.round(self.assessedDivCalc.getValue()/self.minPriceCalc.getValue(), 2)} %")
+        self.maxYieldCalc.changeText(text=f"{np.round(self.assessedDivCalc.getValue()/self.maxPriceCalc.getValue(), 2)} %")
 
     def plotTrends(self):
-        sheetDict = {'historical price - max': '1d', 'historical price - 5y': '1d', 'historical price - 1y': '1d', 'historical price - 6mo': '1d', 'historical price - 3mo': '1d', 'historical price - 1mo': '1d', 'historical price - 5d': '60m', 'historical price - 1d': '1m'}    
+        sheetDict = {
+            'historical price - max': '1d',
+            'historical price - 5y': '1d',
+            'historical price - 1y': '1d',
+            'historical price - 6mo': '1d',
+            'historical price - 3mo': '1d',
+            'historical price - 1mo': '1d',
+            'historical price - 5d': '60m',
+            'historical price - 1d': '1m'
+            }    
         try:
             #Plot trend data for all time periods
             trends = plt.figure()
@@ -296,7 +208,7 @@ class MainApplication:
                 if self.tickerEntry.get() in row[0]:
                     for keyword in keywords:
                         if self.tickerEntry.get() + " " + keyword == row[0]:
-                            self.detailTv.insert(parent="", index="end", iid=countd, text="", values=[value for value in row])
+                            self.detailTv.insertValues([value for value in row], countd)
                             #check for KPI treeview
                             if keyword in keyPerformanceIndicators:
                                 keyPerformanceIndicatorDict[keyword] = np.array(list(row)[1:]).astype(float)
@@ -310,33 +222,44 @@ class MainApplication:
         try:
             keyPerformanceIndicatorList = []
             cashYieldList = ['EBITDA', 'L/T Debt', 'Market cap ']
-            eVMultipleList = ['L/T Debt', 'Market cap ', 'Cash on hand']
+            evMultipleList = ['L/T Debt', 'Market cap ', 'Cash on hand']
             dividendsPaidList = ['Dividends (¢)', 'Shares outstanding ']
             percentEbitdaList = ['Dividends (¢)', 'Shares outstanding ', 'EBITDA']
             netDebtRatioList = ['L/T Debt', 'S/T debt', 'Cash on hand', 'EBITDA']
 
             if all(item in keyPerformanceIndicatorDict for item in cashYieldList):
-                keyPerformanceIndicatorList.append(['Cash Yield'] + list(np.round(keyPerformanceIndicatorDict['EBITDA'] / (keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['Market cap ']) * 100, 2)))
-            if all(item in keyPerformanceIndicatorDict for item in eVMultipleList):
-                keyPerformanceIndicatorList.append(['EV Multiple'] + list(np.round((keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['Market cap '] - keyPerformanceIndicatorDict['Cash on hand']) / keyPerformanceIndicatorDict['EBITDA'], 1)))
+                cashYields = list(np.round(keyPerformanceIndicatorDict['EBITDA'] / (keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['Market cap ']) * 100, 2))
+                keyPerformanceIndicatorList.append(['Cash Yield'] + cashYields)              
+                self.medianValueCalc.changeCashYield(text=f"{np.round(statistics.median(cashYields), 1)}%")
+                self.meanValueCalc.changeCashYield(text=f"{np.round(statistics.mean(cashYields), 1)}%")
+                self.stdValueCalc.changeCashYield(text=f"{np.round(statistics.stdev(cashYields), 1)}%")
+                self.minValueCalc.changeCashYield(text=f"{np.round(statistics.mean(cashYields) - statistics.stdev(cashYields), 1)}%")
+                self.maxValueCalc.changeCashYield(text=f"{np.round(statistics.mean(cashYields) + statistics.stdev(cashYields), 1)}%")
+            if all(item in keyPerformanceIndicatorDict for item in evMultipleList):
+                evMultiples = list(np.round((keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['Market cap '] - keyPerformanceIndicatorDict['Cash on hand']) / keyPerformanceIndicatorDict['EBITDA'], 1))
+                keyPerformanceIndicatorList.append(['EV Multiple'] + evMultiples)
+                self.medianValueCalc.changeEvValue(text=np.round(statistics.median(evMultiples), 1))
+                self.meanValueCalc.changeEvValue(text=np.round(statistics.mean(evMultiples), 1))
+                self.stdValueCalc.changeEvValue(text=np.round(statistics.stdev(evMultiples), 1))
+                self.minValueCalc.changeEvValue(text=np.round(statistics.mean(evMultiples) - statistics.stdev(evMultiples), 1))
+                self.maxValueCalc.changeEvValue(text=np.round(statistics.mean(evMultiples) + statistics.stdev(evMultiples), 1))
             if all(item in keyPerformanceIndicatorDict for item in dividendsPaidList):
                 keyPerformanceIndicatorList.append(['Dividends paid ($M)'] + list(np.round(keyPerformanceIndicatorDict['Dividends (¢)'] * keyPerformanceIndicatorDict['Shares outstanding '] / 100, 1)))
             if all(item in keyPerformanceIndicatorDict for item in percentEbitdaList):
                 keyPerformanceIndicatorList.append(['% EBDITA'] + list(np.round((keyPerformanceIndicatorDict['Dividends (¢)'] * keyPerformanceIndicatorDict['Shares outstanding '] / 100) / keyPerformanceIndicatorDict['EBITDA'] * 100, 0)))
             if all(item in keyPerformanceIndicatorDict for item in netDebtRatioList):
                 keyPerformanceIndicatorList.append(['Net Debt : EBITDA'] + list(np.round((keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['S/T debt'] - keyPerformanceIndicatorDict['Cash on hand']) / keyPerformanceIndicatorDict['EBITDA'], 1)))
-            
-            print(keyPerformanceIndicatorList)
 
             countk = 0
             for kpi in keyPerformanceIndicatorList:
-                self.keyPerformanceTv.insert(parent="", index="end", iid=countk, text="", values=[value for value in kpi])
+                self.keyPerformanceTv.insertValues([value for value in kpi], countk)
                 countk += 1
         except:
             print(f"Something went wrong getting KPIs for {self.tickerEntry.get()}!")
             input()
             sys.exit()
 
+    def getDailyDetails(self):
         # initialise driver
         print("....LOADING: Starting Web Driver...")
         options = Options()
@@ -382,7 +305,7 @@ class MainApplication:
             #Populate Tkinter treeview
             count = 0
             for item in detailDictionary:
-                self.infoTv.insert(parent="", index="end", iid=count, text="", values=(item, detailDictionary[item]))
+                self.infoTv.insertValues((item, detailDictionary[item]), count)
                 count += 1
             #stop driver
             driver.quit()
