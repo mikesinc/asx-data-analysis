@@ -19,6 +19,7 @@ from tvwidget import *
 from calcinput import *
 from calcoutput import *
 from statoutput import *
+from screen import *
 
 class MainApplication:
     def __init__(self, master):
@@ -41,9 +42,8 @@ class MainApplication:
         self.tickerEntry = tk.Entry(self.inputFrame, width=20)
         self.tickerEntry.grid(row=0, column=0)
         #Buttons
-        ttk.Button(self.inputFrame, text='Plot Stock Price', width=20, command=self.plotTrends).grid(row=1, column=0)
-        ttk.Button(self.inputFrame, text='Refresh Daily Data', width=20, command=self.getDailyDetails).grid(row=2, column=1)
-        ttk.Button(self.inputFrame, text='Show Data for listing', width=20, command=self.getDetails).grid(row=2, column=0)
+        ttk.Button(self.inputFrame, text='Show Data for listing', width=20, command=self.printDetailsTv).grid(row=2, column=0)
+        ttk.Button(self.inputFrame, text='Refresh Daily Data', width=20, command=self.getDailyDetails).grid(row=3, column=0)
         ttk.Button(self.inputFrame, text='Quit', width=10, command=self.master.destroy).place(relx=0.9)
 
         # Frame for Treeview (info)
@@ -102,29 +102,108 @@ class MainApplication:
         self.trendsFrame = ttk.LabelFrame(self.tabBook, text="Plots")
         self.trendsFrame.place(relheight=1, relwidth=1)
         self.tabBook.add(self.trendsFrame, text="Plots")
+        ttk.Button(self.trendsFrame, text='Plot Stock Price', width=20, command=self.plotTrends).grid(row=1, column=0)
+        ttk.Button(self.trendsFrame, text='Quit', width=10, command=self.master.destroy).place(relx=0.9)
 
         #Tab for Screening Tool
         self.screenFrame = ttk.LabelFrame(self.tabBook, text="Screening Tool")
         self.screenFrame.place(relheight=1, relwidth=1)
         self.tabBook.add(self.screenFrame, text="Screening Tool")
+        tk.Label(self.screenFrame, width=20).grid(row=12, column=0)
+        ttk.Button(self.screenFrame, text='Search', width=20, command=self.screen).grid(row=13, column=0)
+        ttk.Button(self.screenFrame, text='Quit', width=10, command=self.master.destroy).place(relx=0.9)
+        self.search = tk.IntVar()
+        tk.Radiobutton(self.screenFrame, text="Most recent year only", variable=self.search, value=1, anchor="w", width=20).grid(row=13, column=3)
+        tk.Radiobutton(self.screenFrame, text="Average from 2010", variable=self.search, value=2, anchor="w", width=20).grid(row=14, column=3)
+        self.sectors = [
+            "All",
+            "All",
+            "Automobiles & Components",
+            "Banks",
+            "Capital Goods",
+            "Class Pend",
+            "Commerical & Professional Services",
+            "Consumer Durables & Apparel",
+            "Consumer Services",
+            "Diversified Financials",
+            "Energy",
+            "Food & Staples Retailing",
+            "Food, Beverage & Tobacco",
+            "Health Care Equipment & Services",
+            "Household & Personal Products",
+            "Insurance",
+            "Materials",
+            "Media & Entertainment",
+            "Not Applic",
+            "Pharmaceuticals, Biotechnology & Life Sciences",
+            "Real Estate",
+            "Retailing",
+            "Semiconductors & Semiconductor Equipment",
+            "Software & Services",
+            "Technology Hardware & Equipment",
+            "Telecommunication Services",
+            "Transportation",
+            "Utilities"
+            ]
+        self.sector = tk.StringVar(self.screenFrame)
+        self.sector.set("All")
+        tk.Label(self.screenFrame, text="Sector/Industry", width=20, anchor="w").grid(row=13, column=6)
+        ttk.OptionMenu(self.screenFrame, self.sector, *self.sectors).grid(row=13, column=7)
 
-        #Entry fields for screening tool
-        criteriawidget(self.screenFrame, "Market Capital ($M)", 0, 0)
-        criteriawidget(self.screenFrame, "Shares Outstanding (mil)", 4, 0)
-        criteriawidget(self.screenFrame, "Short-term debt ($M)", 8, 0)
-        criteriawidget(self.screenFrame, "Dividends (c)", 0, 3)
-        criteriawidget(self.screenFrame, "Dividend yield (%)", 4, 3)
-        criteriawidget(self.screenFrame, "EBITDA (%)", 8, 3)
-        criteriawidget(self.screenFrame, "Cash yield (%)", 0, 6)
-        criteriawidget(self.screenFrame, "Cash on hand ($M)", 4, 6)
-        criteriawidget(self.screenFrame, "Long-term debt ($M)", 8, 6)
-        criteriawidget(self.screenFrame, "Book value ($)", 0, 9)
-        criteriawidget(self.screenFrame, "EV Multiple", 4, 9)
-        criteriawidget(self.screenFrame, "Return on capital (%)", 8, 9)
-        criteriawidget(self.screenFrame, "Price/Earnings (%)", 0, 12)
-        criteriawidget(self.screenFrame, "Profit Margin(%)", 4, 12)
-        criteriawidget(self.screenFrame, "Net debt : EBITDA (ratio)", 8, 12)
+        #Entry fields for screening tool 
+        self.marketCapCriteria = criteriawidget(self.screenFrame, "Market Capital ($M)", 0, 0)
+        self.sharesOutstandingCriteria = criteriawidget(self.screenFrame, "Shares Outstanding (mil)", 4, 0)
+        self.shortDebtCriteria = criteriawidget(self.screenFrame, "Short-term debt ($M)", 8, 0)
+        self.dividendsCriteria = criteriawidget(self.screenFrame, "Dividends (c)", 0, 3)
+        self.dividendYieldCriteria = criteriawidget(self.screenFrame, "Dividend yield (%)", 4, 3)
+        self.ebitdaCriteria = criteriawidget(self.screenFrame, "EBITDA (%)", 8, 3)
+        self.cashYieldCriteria = criteriawidget(self.screenFrame, "Cash yield (%)", 0, 6)
+        self.cashCriteria = criteriawidget(self.screenFrame, "Cash on hand ($M)", 4, 6)
+        self.longDebtCriteria = criteriawidget(self.screenFrame, "Long-term debt ($M)", 8, 6)
+        self.bookValueCriteria = criteriawidget(self.screenFrame, "Book value ($)", 0, 9)
+        self.evMultipleCriteria = criteriawidget(self.screenFrame, "EV Multiple", 4, 9)
+        self.returnCapitalCriteria = criteriawidget(self.screenFrame, "Return on capital (%)", 8, 9)
+        self.priceEarningsCriteria = criteriawidget(self.screenFrame, "Price/Earnings (%)", 0, 12)
+        self.profitMarginCriteria = criteriawidget(self.screenFrame, "Profit Margin(%)", 4, 12)
+        self.netDebtEbitdaRatioCriteria = criteriawidget(self.screenFrame, "Net debt : EBITDA (ratio)", 8, 12)
 
+        #Screening tool output frame
+        self.screenOutput = ttk.LabelFrame(self.screenFrame, text="Search Results")
+        self.screenOutput.place(height=650, width=1280, rely=0.28)
+
+        #Screening tool Output treeview
+        columns = (
+            "Name", 
+            "Ticker", 
+            "Sector", 
+            "EV Multiple", 
+            "Cash yield (%)", 
+            "Net debt : EBITDA (ratio)", 
+            "Market capital ($M)", 
+            "Dividends (c)", 
+            "Dividend yield (%)", 
+            "Book value ($)", 
+            "Price / Earnings (%)", 
+            "Shares Outstanding (mil)", 
+            "Cash on hand ($M)", 
+            "Profit margin (%)", 
+            "Short-term debt ($M)", 
+            "EBITDA ($M)", 
+            "Return on captial (%)", 
+            "Long-term debt ($M)"
+            )
+        self.screenTv = tvwidget(self.screenOutput, 1, 1, columns, 250, 150)
+    
+    def listOperation(self, operation, list1, list2):
+        if operation == "sum":
+            return [round(a + b, 2) if isinstance(a, float) and isinstance(b, float) else "—" for a, b in zip(list1, list2)]
+        if operation == "mul":
+            return [round(a * b, 2) if isinstance(a, float) and isinstance(b, float) else "—" for a, b in zip(list1, list2)]
+        if operation == "sub":
+            return [round(a - b, 2) if isinstance(a, float) and isinstance(b, float) else "—" for a, b in zip(list1, list2)]
+        if operation == "div":
+            return [round(a / b, 2) if isinstance(a, float) and isinstance(b, float) else "—" for a, b in zip(list1, list2)]
+        
     def runEstimate(self):
         self.medianPriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.medianValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry())/self.sharesOutstandingEntry.getEntry())
         self.averagePriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.meanValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry())/self.sharesOutstandingEntry.getEntry())
@@ -160,21 +239,24 @@ class MainApplication:
                 plotpos += 1      
             #Add to tinker GUI
             chart = FigureCanvasTkAgg(trends, self.trendsFrame)
-            chart.get_tk_widget().place(relheight=1, relwidth=1)
+            chart.get_tk_widget().place(relheight=0.95, relwidth=1, rely=0.05)
         except:
             print(f"Something went wrong retrieving {self.tickerEntry.get()} historical data")
             print('Press enter to close...')
             input()
             sys.exit()
 
-    def getDetails(self):
+    def convertDictToList(self, dictionary):
+        detailList = []
+        for key, value in dictionary.items():
+            temp = [key] + list(value)
+            detailList.append(temp)
+        return detailList
+
+    def getDetails(self, ticker):
         #Get History
-        try:
-            database = pd.read_csv(os.getcwd() + '\\data\\database.csv') 
-            countd = 0
-            keyPerformanceIndicators = ['EBITDA', 'L/T Debt', 'Market cap ', 'Cash on hand', 'Dividends (¢)', 'Shares outstanding ', 'S/T debt']
-            keyPerformanceIndicatorDict = {}
-            keywords = ['EBITDA',
+        database = pd.read_csv(os.getcwd() + '\\data\\database.csv') 
+        keywords = ['EBITDA',
                     'EBIT',
                     'L/T Debt',
                     'S/T debt',
@@ -204,60 +286,110 @@ class MainApplication:
                     'Return on equity (%)',
                     'Payout ratio (%)',
                     'Shares outstanding ']
-            for row in database.to_numpy():
-                if self.tickerEntry.get() in row[0]:
-                    for keyword in keywords:
-                        if self.tickerEntry.get() + " " + keyword == row[0]:
-                            self.detailTv.insertValues([value for value in row], countd)
-                            #check for KPI treeview
-                            if keyword in keyPerformanceIndicators:
-                                keyPerformanceIndicatorDict[keyword] = np.array(list(row)[1:]).astype(float)
-                            countd += 1
-        except:
-            print(f"Something went wrong getting historical data for {self.tickerEntry.get()}!")
-            input()
-            sys.exit()
+        detailDict = {}
+        for row in database.to_numpy():
+            if ticker in row[0]:
+                for keyword in keywords:
+                    if ticker + " " + keyword == row[0]:
+                        valueList = []
+                        for value in list(row)[1:]:
+                            if value != "—":
+                                value = float(value)
+                            valueList.append(value)
+                        detailDict[keyword] = np.array(valueList)
+        return detailDict
+    
+    def printDetailsTv(self):
+        detailList = self.convertDictToList(self.getDetails(self.tickerEntry.get()))
+        for count, row in enumerate(detailList):
+            self.detailTv.insertValues([value for value in row], count)
 
-        # Calculate KPIs
-        try:
-            keyPerformanceIndicatorList = []
-            cashYieldList = ['EBITDA', 'L/T Debt', 'Market cap ']
-            evMultipleList = ['L/T Debt', 'Market cap ', 'Cash on hand']
-            dividendsPaidList = ['Dividends (¢)', 'Shares outstanding ']
-            percentEbitdaList = ['Dividends (¢)', 'Shares outstanding ', 'EBITDA']
-            netDebtRatioList = ['L/T Debt', 'S/T debt', 'Cash on hand', 'EBITDA']
+        keyDetailList = self.convertDictToList(self.getKeyDetails(self.tickerEntry.get()))
+        for count, row in enumerate(keyDetailList):
+                self.keyPerformanceTv.insertValues([value for value in row], count)
+    
+    def statCalc(self, statistic, list):
+        if statistic == "median":
+            try:
+                return np.round(statistics.median(list), 1)
+            except:
+                return "—"
+        if statistic == "mean":
+            try:
+                return np.round(statistics.mean(list), 1)
+            except:
+                return "—"
+        if statistic == "stdev":
+            try:
+                return np.round(statistics.stdev(list), 1)
+            except:
+                return "—"
+        if statistic == "min":
+            try:
+                return np.round(statistics.stdev(list) - statistics.mean(list), 1)
+            except:
+                return "—"
+        if statistic == "max":
+            try:
+                return np.round(statistics.stdev(list) + statistics.mean(list), 1)
+            except:
+                return "—"
 
-            if all(item in keyPerformanceIndicatorDict for item in cashYieldList):
-                cashYields = list(np.round(keyPerformanceIndicatorDict['EBITDA'] / (keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['Market cap ']) * 100, 2))
-                keyPerformanceIndicatorList.append(['Cash Yield'] + cashYields)              
-                self.medianValueCalc.changeCashYield(text=f"{np.round(statistics.median(cashYields), 1)}%")
-                self.meanValueCalc.changeCashYield(text=f"{np.round(statistics.mean(cashYields), 1)}%")
-                self.stdValueCalc.changeCashYield(text=f"{np.round(statistics.stdev(cashYields), 1)}%")
-                self.minValueCalc.changeCashYield(text=f"{np.round(statistics.mean(cashYields) - statistics.stdev(cashYields), 1)}%")
-                self.maxValueCalc.changeCashYield(text=f"{np.round(statistics.mean(cashYields) + statistics.stdev(cashYields), 1)}%")
-            if all(item in keyPerformanceIndicatorDict for item in evMultipleList):
-                evMultiples = list(np.round((keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['Market cap '] - keyPerformanceIndicatorDict['Cash on hand']) / keyPerformanceIndicatorDict['EBITDA'], 1))
-                keyPerformanceIndicatorList.append(['EV Multiple'] + evMultiples)
-                self.medianValueCalc.changeEvValue(text=np.round(statistics.median(evMultiples), 1))
-                self.meanValueCalc.changeEvValue(text=np.round(statistics.mean(evMultiples), 1))
-                self.stdValueCalc.changeEvValue(text=np.round(statistics.stdev(evMultiples), 1))
-                self.minValueCalc.changeEvValue(text=np.round(statistics.mean(evMultiples) - statistics.stdev(evMultiples), 1))
-                self.maxValueCalc.changeEvValue(text=np.round(statistics.mean(evMultiples) + statistics.stdev(evMultiples), 1))
-            if all(item in keyPerformanceIndicatorDict for item in dividendsPaidList):
-                keyPerformanceIndicatorList.append(['Dividends paid ($M)'] + list(np.round(keyPerformanceIndicatorDict['Dividends (¢)'] * keyPerformanceIndicatorDict['Shares outstanding '] / 100, 1)))
-            if all(item in keyPerformanceIndicatorDict for item in percentEbitdaList):
-                keyPerformanceIndicatorList.append(['% EBDITA'] + list(np.round((keyPerformanceIndicatorDict['Dividends (¢)'] * keyPerformanceIndicatorDict['Shares outstanding '] / 100) / keyPerformanceIndicatorDict['EBITDA'] * 100, 0)))
-            if all(item in keyPerformanceIndicatorDict for item in netDebtRatioList):
-                keyPerformanceIndicatorList.append(['Net Debt : EBITDA'] + list(np.round((keyPerformanceIndicatorDict['L/T Debt'] + keyPerformanceIndicatorDict['S/T debt'] - keyPerformanceIndicatorDict['Cash on hand']) / keyPerformanceIndicatorDict['EBITDA'], 1)))
 
-            countk = 0
-            for kpi in keyPerformanceIndicatorList:
-                self.keyPerformanceTv.insertValues([value for value in kpi], countk)
-                countk += 1
-        except:
-            print(f"Something went wrong getting KPIs for {self.tickerEntry.get()}!")
-            input()
-            sys.exit()
+    def getKeyDetails(self, ticker):
+        detailList = self.convertDictToList(self.getDetails(ticker))
+        keyDetailDict = {}
+        kpiList = ['EBITDA', 'L/T Debt', 'Market cap ', 'Cash on hand', 'Dividends (¢)', 'Shares outstanding ', 'S/T debt']
+        #check for KPI treeview
+        for row in detailList:
+            if row[0] in kpiList:
+                valueList = []
+                for value in list(row)[1:]:
+                    if value != "—":
+                        value = float(value)
+                    valueList.append(value)
+                keyDetailDict[row[0]] = np.array(valueList)
+        
+        cashYieldList = ['EBITDA', 'L/T Debt', 'Market cap ']
+        evMultipleList = ['L/T Debt', 'Market cap ', 'Cash on hand']
+        dividendsPaidList = ['Dividends (¢)', 'Shares outstanding ']
+        percentEbitdaList = ['Dividends (¢)', 'Shares outstanding ', 'EBITDA']
+        netDebtRatioList = ['L/T Debt', 'S/T debt', 'Cash on hand', 'EBITDA']
+        
+        if all(item in keyDetailDict for item in cashYieldList):
+            cashYields = [round(ele * 100, 2) if isinstance(ele, float) else "—" for ele in list(self.listOperation("div", keyDetailDict['EBITDA'], self.listOperation("sum", keyDetailDict['L/T Debt'], keyDetailDict['Market cap '])))]
+            keyDetailDict['Cash Yield'] = cashYields
+            self.medianValueCalc.changeCashYield(text=self.statCalc("median", [ele for ele in cashYields if isinstance(ele, float)]))
+            self.meanValueCalc.changeCashYield(text=self.statCalc("mean", [ele for ele in cashYields if isinstance(ele, float)]))
+            self.stdValueCalc.changeCashYield(text=self.statCalc("stdev", [ele for ele in cashYields if isinstance(ele, float)]))
+            self.minValueCalc.changeCashYield(text=self.statCalc("min", [ele for ele in cashYields if isinstance(ele, float)]))
+            self.maxValueCalc.changeCashYield(text=self.statCalc("max", [ele for ele in cashYields if isinstance(ele, float)]))
+        else:
+            keyDetailDict['Cash Yield'] = "—"
+        if all(item in keyDetailDict for item in evMultipleList):
+            evMultiples = self.listOperation("div", self.listOperation("sub", self.listOperation("sum", keyDetailDict['L/T Debt'], keyDetailDict['Market cap ']), keyDetailDict['Cash on hand']), keyDetailDict['EBITDA'])
+            keyDetailDict['EV Multiple'] = evMultiples
+            self.medianValueCalc.changeEvValue(text=self.statCalc("median", [ele for ele in evMultiples if isinstance(ele, float)]))
+            self.meanValueCalc.changeEvValue(text=self.statCalc("mean", [ele for ele in evMultiples if isinstance(ele, float)]))
+            self.stdValueCalc.changeEvValue(text=self.statCalc("stdev", [ele for ele in evMultiples if isinstance(ele, float)]))
+            self.minValueCalc.changeEvValue(text=self.statCalc("min", [ele for ele in evMultiples if isinstance(ele, float)]))
+            self.maxValueCalc.changeEvValue(text=self.statCalc("max", [ele for ele in evMultiples if isinstance(ele, float)]))
+        else:
+            keyDetailDict['EV Multiple'] = "—"
+        if all(item in keyDetailDict for item in dividendsPaidList):
+            keyDetailDict['Dividends paid ($M)'] = [round(ele / 100, 2) if isinstance(ele, float) else "—" for ele in list(self.listOperation("mul", keyDetailDict['Dividends (¢)'], keyDetailDict['Shares outstanding ']))]
+        else:
+            keyDetailDict['Dividends paid ($M)'] = "—"
+        if all(item in keyDetailDict for item in percentEbitdaList):
+            keyDetailDict['% EBDITA'] = self.listOperation("div", self.listOperation("mul", keyDetailDict['Dividends (¢)'], keyDetailDict['Shares outstanding ']), keyDetailDict['EBITDA'])
+        else:
+            keyDetailDict['% EBDITA'] = "—"
+        if all(item in keyDetailDict for item in netDebtRatioList):
+            keyDetailDict['Net Debt : EBITDA'] = self.listOperation("div", self.listOperation("sub", self.listOperation("sum", keyDetailDict['L/T Debt'], keyDetailDict['S/T debt']), keyDetailDict['Cash on hand']), keyDetailDict['EBITDA'])
+        else:
+            keyDetailDict['Net Debt : EBITDA'] = "—"
+
+        return keyDetailDict
 
     def getDailyDetails(self):
         # initialise driver
@@ -303,10 +435,8 @@ class MainApplication:
                 del detailDictionary['\xa0Company Profile']
             detailDictionary['Market Cap'].replace("\xa0", "").replace(",", "").replace("M", "000000").replace("B", "000000000")
             #Populate Tkinter treeview
-            count = 0
-            for item in detailDictionary:
-                self.infoTv.insertValues((item, detailDictionary[item]), count)
-                count += 1
+            for i, item in enumerate(detailDictionary):
+                self.infoTv.insertValues((item, detailDictionary[item]), i)
             #stop driver
             driver.quit()
         except:
@@ -314,6 +444,49 @@ class MainApplication:
             driver.quit()
             input()
             sys.exit()
+
+    def screen(self):
+        database = pd.read_csv(os.getcwd() + '\\data\\database.csv') 
+        tickers = []
+        for row in database.to_numpy():
+            tickers.append(row[0].split(" ")[0])
+        tickers = sorted(list(set(tickers)))
+        #Go through full ASX listing and extract name and sector of those listings which have data in database
+        listings = {}
+        for name, ticker, sector in pd.read_csv(os.getcwd() + '\\data\\ASXListedCompanies.csv', usecols=[0, 1, 2], header=None).values:
+            if ticker in tickers:
+                listings[ticker] = name, sector
+        print("ticker list unfiltered: ", len(tickers), len(listings.keys()))
+
+        criterion = {}
+        criterion["Market cap"] = self.marketCapCriteria.getBounds()
+        criterion["Dividends (¢)"] = self.dividendsCriteria.getBounds()
+        criterion["Dividend Yield (%)"] = self.dividendYieldCriteria.getBounds()
+        criterion["Book value ($)"] = self.bookValueCriteria.getBounds()
+        criterion["Average annual P/E ratio (%)"] = self.priceEarningsCriteria.getBounds()
+        criterion["Shares outstanding"] = self.sharesOutstandingCriteria.getBounds()
+        criterion["Cash on hand"] = self.cashCriteria.getBounds()
+        criterion["Net profit margin (%)"] = self.profitMarginCriteria.getBounds()
+        criterion["S/T debt"] = self.shortDebtCriteria.getBounds()
+        criterion["EBITDA"] = self.ebitdaCriteria.getBounds()
+        criterion["Return on capital (%)"] = self.returnCapitalCriteria.getBounds()
+        criterion["L/T Debt"] = self.longDebtCriteria.getBounds()
+
+        functionalCriterion = {}
+        functionalCriterion["EV"] = self.evMultipleCriteria.getBounds()
+        functionalCriterion["CY"] = self.cashYieldCriteria.getBounds()
+        functionalCriterion["ND:EBITDA"] = self.netDebtEbitdaRatioCriteria.getBounds()
+
+        screenedLists = [] #List that stores lists of tickers that match criteria for each property
+        screenedTickers = [] #List of tickers that match all criteria (intersect of lists in screen_lists)
+
+        #Run the screening, parameter is SEARCH TYPE (recent year or average all years)
+        screenedTickers = screener().mainScreen(self.master, tickers, database, criterion, functionalCriterion, self.search.get(), screenedLists, screenedTickers)
+        print(len(screenedTickers))
+
+        #Screen for sector
+        screenedTickers = screener().sectorScreen(screenedTickers, self.sector.get(), listings, screenedLists)
+        print(screenedTickers)
 
 if __name__ == "__main__":
     root = tk.Tk()

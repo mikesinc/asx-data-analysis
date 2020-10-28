@@ -16,7 +16,7 @@ class tvwidget:
         self.treeview.column("#0", width=0, stretch=False)
         for column in self.treeview["columns"]:
             self.treeview.column(column, width=colWidth)
-        self.treeview.column("Item", width=firstColWidth)
+        self.treeview.column(self.treeview["columns"][0], width=firstColWidth)
         #Create headings
         self.treeview.heading("#0", text="")
         for column in self.treeview["columns"]:
