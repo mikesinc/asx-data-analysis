@@ -1,7 +1,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 
-class calcinput:
+class Calcinput:
     def __init__(self, frame, text, row, col):
         tk.Label(frame, width=20, text=text, anchor="w").grid(row=row, column=col)
         self.input = tk.Entry(frame, width=20)

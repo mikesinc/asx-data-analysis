@@ -1,7 +1,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 
-class criteriawidget:
+class Criteriawidget:
     def __init__(self, frame, criteria, startRow, startCol):
         tk.Label(frame, width=20, text=criteria, anchor="w").grid(row=startRow, column=startCol)
         tk.Label(frame, width=5, text="max", anchor="w").grid(row=startRow+1, column=startCol+1)

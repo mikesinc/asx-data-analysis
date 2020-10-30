@@ -1,7 +1,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 
-class tvwidget:
+class Tvwidget:
     def __init__(self, frame, relheight, relwidth, columns, firstColWidth=None, colWidth=None): #column as tuple
         #Construct Treeview
         self.treeview = ttk.Treeview(frame)

@@ -14,11 +14,11 @@ import os
 from bs4 import BeautifulSoup
 import numpy as np
 import statistics
-from criteriawidget import *
-from tvwidget import *
-from calcinput import *
-from calcoutput import *
-from statoutput import *
+from Criteriawidget import *
+from Tvwidget import *
+from Calcinput import *
+from Calcoutput import *
+from Statoutput import *
 from Screen import *
 from Details import *
 
@@ -51,7 +51,7 @@ class MainApplication:
         self.infoFrame = ttk.LabelFrame(self.tabBook, text="Stock Summary")
         self.infoFrame.place(height=370, width=640, rely=0.12)
         #Treeview widget
-        self.infoTv = tvwidget(frame=self.infoFrame, relheight=1, relwidth=1, columns=("Item", "Value"))
+        self.infoTv = Tvwidget(frame=self.infoFrame, relheight=1, relwidth=1, columns=("Item", "Value"))
 
         #Frame for Estimates (calculations)
         self.estimateFrame = ttk.LabelFrame(self.tabBook, text="Estimated forward values")
@@ -59,45 +59,45 @@ class MainApplication:
         #Calc button
         ttk.Button(self.estimateFrame, text='Calculate Estimates', width=20, command=self.runEstimate).grid(row=0, column=2)
         #Entry fields
-        self.ebitdaEntry = calcinput(self.estimateFrame, text="EBITDA ($M)", row=0, col=0)
-        self.sharesOutstandingEntry = calcinput(self.estimateFrame, text="Shares Outstanding (M)", row=1, col=0)
-        self.longDebtEntry = calcinput(self.estimateFrame, text="L/T Debt ($M)", row=2, col=0)
-        self.cashEntry = calcinput(self.estimateFrame, text="Cash on hand ($M)", row=3, col=0)
-        self.percentEbitdaEntry = calcinput(self.estimateFrame, text="% EBITDA", row=4, col=0)
+        self.ebitdaEntry = Calcinput(self.estimateFrame, text="EBITDA ($M)", row=0, col=0)
+        self.sharesOutstandingEntry = Calcinput(self.estimateFrame, text="Shares Outstanding (M)", row=1, col=0)
+        self.longDebtEntry = Calcinput(self.estimateFrame, text="L/T Debt ($M)", row=2, col=0)
+        self.cashEntry = Calcinput(self.estimateFrame, text="Cash on hand ($M)", row=3, col=0)
+        self.percentEbitdaEntry = Calcinput(self.estimateFrame, text="% EBITDA", row=4, col=0)
         tk.Label(self.estimateFrame, width=20).grid(row=5, column=0)
 
         #Calculated values
-        self.medianPriceCalc = calcoutput(self.estimateFrame, text="Median Price", row=6, col=0, width=20)
-        self.averagePriceCalc = calcoutput(self.estimateFrame, text="Average Price", row=7, col=0, width=20)
-        self.minPriceCalc = calcoutput(self.estimateFrame, text="Min Price", row=8, col=0, width=20)
-        self.maxPriceCalc = calcoutput(self.estimateFrame, text="Max Price", row=9, col=0, width=20)
-        self.divPaidCalc = calcoutput(self.estimateFrame, text="Dividends Paid ($M)", row=10, col=0, width=20)
-        self.medianYieldCalc = calcoutput(self.estimateFrame, text="Median Yield", row=11, col=0, width=20)
-        self.averageYieldCalc = calcoutput(self.estimateFrame, text="Average Yield", row=12, col=0, width=20)
-        self.minYieldCalc = calcoutput(self.estimateFrame, text="Minimum Yield", row=13, col=0, width=20)
-        self.maxYieldCalc = calcoutput(self.estimateFrame, text="Maximum Yield", row=14, col=0, width=20)
-        self.assessedDivCalc = calcoutput(self.estimateFrame, text="Assessed Dividend", row=15, col=0, width=20)
+        self.medianPriceCalc = Calcoutput(self.estimateFrame, text="Median Price", row=6, col=0, width=20)
+        self.averagePriceCalc = Calcoutput(self.estimateFrame, text="Average Price", row=7, col=0, width=20)
+        self.minPriceCalc = Calcoutput(self.estimateFrame, text="Min Price", row=8, col=0, width=20)
+        self.maxPriceCalc = Calcoutput(self.estimateFrame, text="Max Price", row=9, col=0, width=20)
+        self.divPaidCalc = Calcoutput(self.estimateFrame, text="Dividends Paid ($M)", row=10, col=0, width=20)
+        self.medianYieldCalc = Calcoutput(self.estimateFrame, text="Median Yield", row=11, col=0, width=20)
+        self.averageYieldCalc = Calcoutput(self.estimateFrame, text="Average Yield", row=12, col=0, width=20)
+        self.minYieldCalc = Calcoutput(self.estimateFrame, text="Minimum Yield", row=13, col=0, width=20)
+        self.maxYieldCalc = Calcoutput(self.estimateFrame, text="Maximum Yield", row=14, col=0, width=20)
+        self.assessedDivCalc = Calcoutput(self.estimateFrame, text="Assessed Dividend", row=15, col=0, width=20)
 
         #stats values
         tk.Label(self.estimateFrame, width=10, text="Cash Yield %").grid(row=5, column=3)
         tk.Label(self.estimateFrame, width=10, text="EV Multiple").grid(row=5, column=4)
-        self.medianValueCalc = statoutput(self.estimateFrame, text="Median Value", row=6, col=2, width=10)
-        self.meanValueCalc = statoutput(self.estimateFrame, text="Mean Value", row=7, col=2, width=10)
-        self.stdValueCalc = statoutput(self.estimateFrame, text="Std. Dev.", row=8, col=2, width=10)
-        self.minValueCalc = statoutput(self.estimateFrame, text="Min. value", row=9, col=2, width=10)
-        self.maxValueCalc = statoutput(self.estimateFrame, text="Max. value", row=10, col=2, width=10)
+        self.medianValueCalc = Statoutput(self.estimateFrame, text="Median Value", row=6, col=2, width=10)
+        self.meanValueCalc = Statoutput(self.estimateFrame, text="Mean Value", row=7, col=2, width=10)
+        self.stdValueCalc = Statoutput(self.estimateFrame, text="Std. Dev.", row=8, col=2, width=10)
+        self.minValueCalc = Statoutput(self.estimateFrame, text="Min. value", row=9, col=2, width=10)
+        self.maxValueCalc = Statoutput(self.estimateFrame, text="Max. value", row=10, col=2, width=10)
 
         #Frame for KPIs (Selected info from database)
         self.keyPerformanceFrame = ttk.LabelFrame(self.tabBook, text="Key Performance Indicators")
         self.keyPerformanceFrame.place(height=165, width=1280, rely=0.5)
         #Treeview widget
-        self.keyPerformanceTv = tvwidget(frame=self.keyPerformanceFrame, relheight=1, relwidth=1, columns=("Item", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"), firstColWidth=250, colWidth=50)
+        self.keyPerformanceTv = Tvwidget(frame=self.keyPerformanceFrame, relheight=1, relwidth=1, columns=("Item", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"), firstColWidth=250, colWidth=50)
 
         #Frame for Details (Extended info from database)
         self.detailsFrame = ttk.LabelFrame(self.tabBook, text="Historical Performance")
         self.detailsFrame.place(height=300, width=1280, rely=0.67)
         #Treeview widget
-        self.detailTv = tvwidget(frame=self.detailsFrame, relheight=1, relwidth=1, columns=("Item", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"), firstColWidth=250, colWidth=50)
+        self.detailTv = Tvwidget(frame=self.detailsFrame, relheight=1, relwidth=1, columns=("Item", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"), firstColWidth=250, colWidth=50)
 
         #Tab for Trend Plots
         self.trendsFrame = ttk.LabelFrame(self.tabBook, text="Plots")
@@ -153,21 +153,21 @@ class MainApplication:
         ttk.OptionMenu(self.screenFrame, self.sector, *self.sectors).grid(row=13, column=7)
 
         #Entry fields for screening tool 
-        self.marketCapCriteria = criteriawidget(self.screenFrame, "Market Capital ($M)", 0, 0)
-        self.sharesOutstandingCriteria = criteriawidget(self.screenFrame, "Shares Outstanding (mil)", 4, 0)
-        self.shortDebtCriteria = criteriawidget(self.screenFrame, "Short-term debt ($M)", 8, 0)
-        self.dividendsCriteria = criteriawidget(self.screenFrame, "Dividends (¢)", 0, 3)
-        self.dividendYieldCriteria = criteriawidget(self.screenFrame, "Dividend yield (%)", 4, 3)
-        self.ebitdaCriteria = criteriawidget(self.screenFrame, "EBITDA (%)", 8, 3)
-        self.cashYieldCriteria = criteriawidget(self.screenFrame, "Cash yield (%)", 0, 6)
-        self.cashCriteria = criteriawidget(self.screenFrame, "Cash on hand ($M)", 4, 6)
-        self.longDebtCriteria = criteriawidget(self.screenFrame, "Long-term debt ($M)", 8, 6)
-        self.bookValueCriteria = criteriawidget(self.screenFrame, "Book value ($)", 0, 9)
-        self.evMultipleCriteria = criteriawidget(self.screenFrame, "EV Multiple", 4, 9)
-        self.returnCapitalCriteria = criteriawidget(self.screenFrame, "Return on capital (%)", 8, 9)
-        self.priceEarningsCriteria = criteriawidget(self.screenFrame, "Price/Earnings (%)", 0, 12)
-        self.profitMarginCriteria = criteriawidget(self.screenFrame, "Profit Margin(%)", 4, 12)
-        self.netDebtEbitdaRatioCriteria = criteriawidget(self.screenFrame, "Net debt : EBITDA (ratio)", 8, 12)
+        self.marketCapCriteria = Criteriawidget(self.screenFrame, "Market Capital ($M)", 0, 0)
+        self.sharesOutstandingCriteria = Criteriawidget(self.screenFrame, "Shares Outstanding (mil)", 4, 0)
+        self.shortDebtCriteria = Criteriawidget(self.screenFrame, "Short-term debt ($M)", 8, 0)
+        self.dividendsCriteria = Criteriawidget(self.screenFrame, "Dividends (¢)", 0, 3)
+        self.dividendYieldCriteria = Criteriawidget(self.screenFrame, "Dividend yield (%)", 4, 3)
+        self.ebitdaCriteria = Criteriawidget(self.screenFrame, "EBITDA (%)", 8, 3)
+        self.cashYieldCriteria = Criteriawidget(self.screenFrame, "Cash yield (%)", 0, 6)
+        self.cashCriteria = Criteriawidget(self.screenFrame, "Cash on hand ($M)", 4, 6)
+        self.longDebtCriteria = Criteriawidget(self.screenFrame, "Long-term debt ($M)", 8, 6)
+        self.bookValueCriteria = Criteriawidget(self.screenFrame, "Book value ($)", 0, 9)
+        self.evMultipleCriteria = Criteriawidget(self.screenFrame, "EV Multiple", 4, 9)
+        self.returnCapitalCriteria = Criteriawidget(self.screenFrame, "Return on capital (%)", 8, 9)
+        self.priceEarningsCriteria = Criteriawidget(self.screenFrame, "Price/Earnings (%)", 0, 12)
+        self.profitMarginCriteria = Criteriawidget(self.screenFrame, "Profit Margin(%)", 4, 12)
+        self.netDebtEbitdaRatioCriteria = Criteriawidget(self.screenFrame, "Net debt : EBITDA (ratio)", 8, 12)
 
         #Screening tool output frame
         self.screenOutput = ttk.LabelFrame(self.screenFrame, text="Search Results")
@@ -194,7 +194,7 @@ class MainApplication:
             "Return on captial (%)", 
             "Long-term debt ($M)"
             )
-        self.screenTv = tvwidget(self.screenOutput, 1, 1, columns, 250, 150)
+        self.screenTv = Tvwidget(self.screenOutput, 1, 1, columns, 250, 150)
         
     def runEstimate(self):
         self.medianPriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.medianValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry())/self.sharesOutstandingEntry.getEntry())
