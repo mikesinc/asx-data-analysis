@@ -19,7 +19,8 @@ from tvwidget import *
 from calcinput import *
 from calcoutput import *
 from statoutput import *
-from screen import *
+from Screen import *
+from Details import *
 
 class MainApplication:
     def __init__(self, master):
@@ -42,7 +43,7 @@ class MainApplication:
         self.tickerEntry = tk.Entry(self.inputFrame, width=20)
         self.tickerEntry.grid(row=0, column=0)
         #Buttons
-        ttk.Button(self.inputFrame, text='Show Data for listing', width=20, command=self.printDetailsTv).grid(row=2, column=0)
+        ttk.Button(self.inputFrame, text='Show Data for listing', width=20, command=self.printDetails).grid(row=2, column=0)
         ttk.Button(self.inputFrame, text='Refresh Daily Data', width=20, command=self.getDailyDetails).grid(row=3, column=0)
         ttk.Button(self.inputFrame, text='Quit', width=10, command=self.master.destroy).place(relx=0.9)
 
@@ -113,6 +114,7 @@ class MainApplication:
         ttk.Button(self.screenFrame, text='Search', width=20, command=self.screen).grid(row=13, column=0)
         ttk.Button(self.screenFrame, text='Quit', width=10, command=self.master.destroy).place(relx=0.9)
         self.search = tk.IntVar()
+        self.search.set(1)
         tk.Radiobutton(self.screenFrame, text="Most recent year only", variable=self.search, value=1, anchor="w", width=20).grid(row=13, column=3)
         tk.Radiobutton(self.screenFrame, text="Average from 2010", variable=self.search, value=2, anchor="w", width=20).grid(row=14, column=3)
         self.sectors = [
@@ -154,7 +156,7 @@ class MainApplication:
         self.marketCapCriteria = criteriawidget(self.screenFrame, "Market Capital ($M)", 0, 0)
         self.sharesOutstandingCriteria = criteriawidget(self.screenFrame, "Shares Outstanding (mil)", 4, 0)
         self.shortDebtCriteria = criteriawidget(self.screenFrame, "Short-term debt ($M)", 8, 0)
-        self.dividendsCriteria = criteriawidget(self.screenFrame, "Dividends (c)", 0, 3)
+        self.dividendsCriteria = criteriawidget(self.screenFrame, "Dividends (¢)", 0, 3)
         self.dividendYieldCriteria = criteriawidget(self.screenFrame, "Dividend yield (%)", 4, 3)
         self.ebitdaCriteria = criteriawidget(self.screenFrame, "EBITDA (%)", 8, 3)
         self.cashYieldCriteria = criteriawidget(self.screenFrame, "Cash yield (%)", 0, 6)
@@ -193,16 +195,6 @@ class MainApplication:
             "Long-term debt ($M)"
             )
         self.screenTv = tvwidget(self.screenOutput, 1, 1, columns, 250, 150)
-    
-    def listOperation(self, operation, list1, list2):
-        if operation == "sum":
-            return [round(a + b, 2) if isinstance(a, float) and isinstance(b, float) else "—" for a, b in zip(list1, list2)]
-        if operation == "mul":
-            return [round(a * b, 2) if isinstance(a, float) and isinstance(b, float) else "—" for a, b in zip(list1, list2)]
-        if operation == "sub":
-            return [round(a - b, 2) if isinstance(a, float) and isinstance(b, float) else "—" for a, b in zip(list1, list2)]
-        if operation == "div":
-            return [round(a / b, 2) if isinstance(a, float) and isinstance(b, float) else "—" for a, b in zip(list1, list2)]
         
     def runEstimate(self):
         self.medianPriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.medianValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry())/self.sharesOutstandingEntry.getEntry())
@@ -245,151 +237,54 @@ class MainApplication:
             print('Press enter to close...')
             input()
             sys.exit()
+    
+    def statCalc(self, statistic, list):
+        try:
+            if statistic == "median":
+                return np.round(statistics.median(list), 1)
+            elif statistic == "mean":
+                return np.round(statistics.mean(list), 1)
+            elif statistic == "stdev":
+                return np.round(statistics.stdev(list), 1)
+            elif statistic == "min":
+                return np.round(statistics.stdev(list) - statistics.mean(list), 1)
+            elif statistic == "max":
+                return np.round(statistics.stdev(list) + statistics.mean(list), 1)
+        except:
+            return "—"
 
+    def getStats(self):
+        keyDetailDict = Details(self.tickerEntry.get()).getKeyDetails()
+        self.medianValueCalc.changeCashYield(text=self.statCalc("median", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float)]))
+        self.meanValueCalc.changeCashYield(text=self.statCalc("mean", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float)]))
+        self.stdValueCalc.changeCashYield(text=self.statCalc("stdev", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float)]))
+        self.minValueCalc.changeCashYield(text=self.statCalc("min", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float)]))
+        self.maxValueCalc.changeCashYield(text=self.statCalc("max", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float)]))
+        self.medianValueCalc.changeEvValue(text=self.statCalc("median", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float)]))
+        self.meanValueCalc.changeEvValue(text=self.statCalc("mean", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float)]))
+        self.stdValueCalc.changeEvValue(text=self.statCalc("stdev", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float)]))
+        self.minValueCalc.changeEvValue(text=self.statCalc("min", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float)]))
+        self.maxValueCalc.changeEvValue(text=self.statCalc("max", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float)]))
+    
     def convertDictToList(self, dictionary):
         detailList = []
         for key, value in dictionary.items():
             temp = [key] + list(value)
             detailList.append(temp)
         return detailList
-
-    def getDetails(self, ticker):
-        #Get History
-        database = pd.read_csv(os.getcwd() + '\\data\\database.csv') 
-        keywords = ['EBITDA',
-                    'EBIT',
-                    'L/T Debt',
-                    'S/T debt',
-                    'Market cap ',
-                    'Dividends (¢)',
-                    'Dividend yield (%)',
-                    'Revenues ',
-                    'Net profit ',
-                    'Net profit margin(%)',
-                    'Capital spending (¢)',
-                    'Cash on hand',
-                    'Net operating cashflows ',
-                    'Net investing cashflows ',
-                    'Net financing cashflows ',
-                    'Cash flow (¢)',
-                    'Earnings pre abs (¢)',
-                    'Book value ($)',
-                    'Average annual P/E ratio (%)',
-                    'Relative P/E (%)',
-                    'Total return (%)',
-                    'Depreciation ',
-                    'Amortisation ',
-                    'Income tax rate (%)',
-                    'Employees (thousands)',
-                    'Shareholders equity',
-                    'Return on capital (%)',
-                    'Return on equity (%)',
-                    'Payout ratio (%)',
-                    'Shares outstanding ']
-        detailDict = {}
-        for row in database.to_numpy():
-            if ticker in row[0]:
-                for keyword in keywords:
-                    if ticker + " " + keyword == row[0]:
-                        valueList = []
-                        for value in list(row)[1:]:
-                            if value != "—":
-                                value = float(value)
-                            valueList.append(value)
-                        detailDict[keyword] = np.array(valueList)
-        return detailDict
     
-    def printDetailsTv(self):
-        detailList = self.convertDictToList(self.getDetails(self.tickerEntry.get()))
+    def printDetails(self):
+        detailList = self.convertDictToList(Details(self.tickerEntry.get()).getDetails())
+        self.detailTv.clear()
         for count, row in enumerate(detailList):
             self.detailTv.insertValues([value for value in row], count)
 
-        keyDetailList = self.convertDictToList(self.getKeyDetails(self.tickerEntry.get()))
+        keyDetailList = self.convertDictToList(Details(self.tickerEntry.get()).getKeyDetails())
+        self.keyPerformanceTv.clear()
         for count, row in enumerate(keyDetailList):
-                self.keyPerformanceTv.insertValues([value for value in row], count)
-    
-    def statCalc(self, statistic, list):
-        if statistic == "median":
-            try:
-                return np.round(statistics.median(list), 1)
-            except:
-                return "—"
-        if statistic == "mean":
-            try:
-                return np.round(statistics.mean(list), 1)
-            except:
-                return "—"
-        if statistic == "stdev":
-            try:
-                return np.round(statistics.stdev(list), 1)
-            except:
-                return "—"
-        if statistic == "min":
-            try:
-                return np.round(statistics.stdev(list) - statistics.mean(list), 1)
-            except:
-                return "—"
-        if statistic == "max":
-            try:
-                return np.round(statistics.stdev(list) + statistics.mean(list), 1)
-            except:
-                return "—"
-
-
-    def getKeyDetails(self, ticker):
-        detailList = self.convertDictToList(self.getDetails(ticker))
-        keyDetailDict = {}
-        kpiList = ['EBITDA', 'L/T Debt', 'Market cap ', 'Cash on hand', 'Dividends (¢)', 'Shares outstanding ', 'S/T debt']
-        #check for KPI treeview
-        for row in detailList:
-            if row[0] in kpiList:
-                valueList = []
-                for value in list(row)[1:]:
-                    if value != "—":
-                        value = float(value)
-                    valueList.append(value)
-                keyDetailDict[row[0]] = np.array(valueList)
+            self.keyPerformanceTv.insertValues([value for value in row], count)
         
-        cashYieldList = ['EBITDA', 'L/T Debt', 'Market cap ']
-        evMultipleList = ['L/T Debt', 'Market cap ', 'Cash on hand']
-        dividendsPaidList = ['Dividends (¢)', 'Shares outstanding ']
-        percentEbitdaList = ['Dividends (¢)', 'Shares outstanding ', 'EBITDA']
-        netDebtRatioList = ['L/T Debt', 'S/T debt', 'Cash on hand', 'EBITDA']
-        
-        if all(item in keyDetailDict for item in cashYieldList):
-            cashYields = [round(ele * 100, 2) if isinstance(ele, float) else "—" for ele in list(self.listOperation("div", keyDetailDict['EBITDA'], self.listOperation("sum", keyDetailDict['L/T Debt'], keyDetailDict['Market cap '])))]
-            keyDetailDict['Cash Yield'] = cashYields
-            self.medianValueCalc.changeCashYield(text=self.statCalc("median", [ele for ele in cashYields if isinstance(ele, float)]))
-            self.meanValueCalc.changeCashYield(text=self.statCalc("mean", [ele for ele in cashYields if isinstance(ele, float)]))
-            self.stdValueCalc.changeCashYield(text=self.statCalc("stdev", [ele for ele in cashYields if isinstance(ele, float)]))
-            self.minValueCalc.changeCashYield(text=self.statCalc("min", [ele for ele in cashYields if isinstance(ele, float)]))
-            self.maxValueCalc.changeCashYield(text=self.statCalc("max", [ele for ele in cashYields if isinstance(ele, float)]))
-        else:
-            keyDetailDict['Cash Yield'] = "—"
-        if all(item in keyDetailDict for item in evMultipleList):
-            evMultiples = self.listOperation("div", self.listOperation("sub", self.listOperation("sum", keyDetailDict['L/T Debt'], keyDetailDict['Market cap ']), keyDetailDict['Cash on hand']), keyDetailDict['EBITDA'])
-            keyDetailDict['EV Multiple'] = evMultiples
-            self.medianValueCalc.changeEvValue(text=self.statCalc("median", [ele for ele in evMultiples if isinstance(ele, float)]))
-            self.meanValueCalc.changeEvValue(text=self.statCalc("mean", [ele for ele in evMultiples if isinstance(ele, float)]))
-            self.stdValueCalc.changeEvValue(text=self.statCalc("stdev", [ele for ele in evMultiples if isinstance(ele, float)]))
-            self.minValueCalc.changeEvValue(text=self.statCalc("min", [ele for ele in evMultiples if isinstance(ele, float)]))
-            self.maxValueCalc.changeEvValue(text=self.statCalc("max", [ele for ele in evMultiples if isinstance(ele, float)]))
-        else:
-            keyDetailDict['EV Multiple'] = "—"
-        if all(item in keyDetailDict for item in dividendsPaidList):
-            keyDetailDict['Dividends paid ($M)'] = [round(ele / 100, 2) if isinstance(ele, float) else "—" for ele in list(self.listOperation("mul", keyDetailDict['Dividends (¢)'], keyDetailDict['Shares outstanding ']))]
-        else:
-            keyDetailDict['Dividends paid ($M)'] = "—"
-        if all(item in keyDetailDict for item in percentEbitdaList):
-            keyDetailDict['% EBDITA'] = self.listOperation("div", self.listOperation("mul", keyDetailDict['Dividends (¢)'], keyDetailDict['Shares outstanding ']), keyDetailDict['EBITDA'])
-        else:
-            keyDetailDict['% EBDITA'] = "—"
-        if all(item in keyDetailDict for item in netDebtRatioList):
-            keyDetailDict['Net Debt : EBITDA'] = self.listOperation("div", self.listOperation("sub", self.listOperation("sum", keyDetailDict['L/T Debt'], keyDetailDict['S/T debt']), keyDetailDict['Cash on hand']), keyDetailDict['EBITDA'])
-        else:
-            keyDetailDict['Net Debt : EBITDA'] = "—"
-
-        return keyDetailDict
+        self.getStats()
 
     def getDailyDetails(self):
         # initialise driver
@@ -435,6 +330,7 @@ class MainApplication:
                 del detailDictionary['\xa0Company Profile']
             detailDictionary['Market Cap'].replace("\xa0", "").replace(",", "").replace("M", "000000").replace("B", "000000000")
             #Populate Tkinter treeview
+            self.infoTv.clear()
             for i, item in enumerate(detailDictionary):
                 self.infoTv.insertValues((item, detailDictionary[item]), i)
             #stop driver
@@ -446,18 +342,6 @@ class MainApplication:
             sys.exit()
 
     def screen(self):
-        database = pd.read_csv(os.getcwd() + '\\data\\database.csv') 
-        tickers = []
-        for row in database.to_numpy():
-            tickers.append(row[0].split(" ")[0])
-        tickers = sorted(list(set(tickers)))
-        #Go through full ASX listing and extract name and sector of those listings which have data in database
-        listings = {}
-        for name, ticker, sector in pd.read_csv(os.getcwd() + '\\data\\ASXListedCompanies.csv', usecols=[0, 1, 2], header=None).values:
-            if ticker in tickers:
-                listings[ticker] = name, sector
-        print("ticker list unfiltered: ", len(tickers), len(listings.keys()))
-
         criterion = {}
         criterion["Market cap"] = self.marketCapCriteria.getBounds()
         criterion["Dividends (¢)"] = self.dividendsCriteria.getBounds()
@@ -477,16 +361,13 @@ class MainApplication:
         functionalCriterion["CY"] = self.cashYieldCriteria.getBounds()
         functionalCriterion["ND:EBITDA"] = self.netDebtEbitdaRatioCriteria.getBounds()
 
-        screenedLists = [] #List that stores lists of tickers that match criteria for each property
-        screenedTickers = [] #List of tickers that match all criteria (intersect of lists in screen_lists)
+        database = pd.read_csv(os.getcwd() + '\\data\\database.csv') 
 
-        #Run the screening, parameter is SEARCH TYPE (recent year or average all years)
-        screenedTickers = screener().mainScreen(self.master, tickers, database, criterion, functionalCriterion, self.search.get(), screenedLists, screenedTickers)
-        print(len(screenedTickers))
+        screenResults = Screen(database, criterion, functionalCriterion, self.search.get(), self.sector.get()).screen()
 
-        #Screen for sector
-        screenedTickers = screener().sectorScreen(screenedTickers, self.sector.get(), listings, screenedLists)
-        print(screenedTickers)
+        self.screenTv.clear()
+        for count, row in enumerate(screenResults):
+            self.screenTv.insertValues([value for value in row], count)
 
 if __name__ == "__main__":
     root = tk.Tk()

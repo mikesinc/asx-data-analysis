@@ -24,3 +24,6 @@ class tvwidget:
 
     def insertValues(self, values, id):
         self.treeview.insert(parent="", index="end", iid=id, text="", values=values)
+
+    def clear(self):
+        self.treeview.delete(*self.treeview.get_children())
