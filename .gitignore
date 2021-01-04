@@ -1,12 +1,13 @@
 #ignore these files
 
 config.py
-# /data
-# /driver_extensions
+/data
+/driver_extensions
 /env
+/web_driver
 __pycache__
 *.xlsm
 *.zip
 *.exe
 *.log
-# *.csv
+*.csv
