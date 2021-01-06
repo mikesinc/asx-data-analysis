@@ -14,6 +14,30 @@ import os
 from bs4 import BeautifulSoup
 import stdiomask
 from tqdm import tqdm
+import numpy as np
+
+def convertDictToList(dictionary):
+    detailList = []
+    for key, value in dictionary.items():
+        temp = [key] + list(value)
+        detailList.append(temp)
+    return detailList
+
+def type_convert(ele):
+    try:
+        return float(ele)
+    except:
+        return ele
+
+def listOperation(operation, list1, list2):
+    if operation == "sum":
+        return [round(type_convert(a) + type_convert(b), 2) if isinstance(type_convert(a), float) and isinstance(type_convert(b), float) else "—" for a, b in zip(list1, list2)]
+    if operation == "mul":
+        return [round(type_convert(a) * type_convert(b), 2) if isinstance(type_convert(a), float) and isinstance(type_convert(b), float) else "—" for a, b in zip(list1, list2)]
+    if operation == "sub":
+        return [round(type_convert(a) - type_convert(b), 2) if isinstance(type_convert(a), float) and isinstance(type_convert(b), float) else "—" for a, b in zip(list1, list2)]
+    if operation == "div":
+        return [round(type_convert(a) / type_convert(b), 2) if isinstance(type_convert(a), float) and isinstance(type_convert(b), float) and type_convert(b) != 0 else "—" for a, b in zip(list1, list2)]
 
 def initial_login(password, tickers):
     try:
@@ -73,16 +97,17 @@ def get_recent_year_data(tickers):
             debt_recent_year, cash_recent_year = data_scrape_page_two(ticker)
         except:
             page_two_failed_tickers.append(ticker)
-        #concat to single df
-        recent_data = pd.concat([
-            per_share_recent_year,
-            historical_financials_recent_year,
-            cash_flows_recent_year,
-            debt_recent_year,
-            cash_recent_year
-        ])
-        #Updating existing DB with most recent year info
-        update_db(ticker, most_recent_year, recent_data)
+        if 10 < int(most_recent_year) < 50:
+            #concat to single df
+            recent_data = pd.concat([
+                per_share_recent_year,
+                historical_financials_recent_year,
+                cash_flows_recent_year,
+                debt_recent_year,
+                cash_recent_year
+            ])
+            #Updating existing DB with most recent year info
+            update_db(ticker, most_recent_year, recent_data)
         
     database.to_csv(f'{directory}/database.csv', header=True, index=False)
     print(f"failed loading page one for the following tickers: {page_one_failed_tickers}")
@@ -94,8 +119,104 @@ def update_db(ticker, year, recent_data):
     for entry in ticker_entries.items():
         for data in recent_data.to_numpy():
             if entry[1] == ticker + " " + data[0]:
-                database.loc[entry[0], [column_to_update]] = data[1]
+                database.loc[entry[0], [column_to_update]] = "—" if data[1] == "--" else data[1]
+
+def getDetails(ticker):
+    keywords = ['EBITDA (m)',
+                'EBIT (m)',
+                'L/T Debt',
+                'S/T debt',
+                'Market cap (m)',
+                'Dividends (¢)',
+                'Dividend yield (%)',
+                'Revenues (m)',
+                'Net profit (m)',
+                'Net profit margin(%)',
+                'Capital spending (¢)',
+                'Cash',
+                'Net operating cashflows (m)',
+                'Net investing cashflows (m)',
+                'Net financing cashflows (m)',
+                'Cash flow (¢)',
+                'Earnings pre abs (¢)',
+                'Book value ($)',
+                'Average annual P/E ratio (%)',
+                'Relative P/E (%)',
+                'Total return (%)',
+                'Depreciation (m)',
+                'Amortisation (m)',
+                'Income tax rate (%)',
+                'Employees (thousands)',
+                'Shareholders equity',
+                'Return on capital (%)',
+                'Return on equity (%)',
+                'Payout ratio (%)',
+                'Shares outstanding (m)']
+    detailDict = {}
+    for row in database.to_numpy():
+        if ticker in row[0]:
+            for keyword in keywords:
+                if ticker + " " + keyword == row[0]:
+                    valueList = []
+                    for value in list(row)[1:]:
+                        if value != "—":
+                            value = float(value)
+                        valueList.append(value)
+                    detailDict[keyword] = np.array(valueList)
+    return detailDict
+
+def getKeyDetails(ticker):
+    detailList = convertDictToList(getDetails(ticker))
+    keyDetailDict = {}
+    func_properties = {}
+    kpiList = ['EBITDA (m)', 'L/T Debt', 'Market cap (m)', 'Cash', 'Dividends (¢)', 'Shares outstanding (m)', 'S/T debt']
+    for row in detailList:
+        if row[0] in kpiList:
+            valueList = []
+            for value in list(row)[1:]:
+                if value != "—":
+                    value = float(value)
+                valueList.append(value)
+            keyDetailDict[row[0]] = np.array(valueList)
+    cashYieldList = ['EBITDA (m)', 'L/T Debt', 'Market cap (m)']
+    evMultipleList = ['L/T Debt', 'Market cap (m)', 'Cash']
+    dividendsPaidList = ['Dividends (¢)', 'Shares outstanding (m)']
+    percentEbitdaList = ['Dividends (¢)', 'Shares outstanding (m)', 'EBITDA (m)']
+    netDebtRatioList = ['L/T Debt', 'S/T debt', 'Cash', 'EBITDA (m)']
     
+    if all(item in keyDetailDict for item in cashYieldList):
+        cashYields = [round(ele * 100, 2) if isinstance(ele, float) else "—" for ele in list(listOperation("div", keyDetailDict['EBITDA (m)'], listOperation("sum", keyDetailDict['L/T Debt'], keyDetailDict['Market cap (m)'])))]
+        func_properties[f'{ticker} Cash Yield'] = cashYields
+
+    if all(item in keyDetailDict for item in evMultipleList):
+        evMultiples = listOperation("div", listOperation("sub", listOperation("sum", keyDetailDict['L/T Debt'], keyDetailDict['Market cap (m)']), keyDetailDict['Cash']), keyDetailDict['EBITDA (m)'])
+        func_properties[f'{ticker} EV Multiple'] = evMultiples
+
+    if all(item in keyDetailDict for item in dividendsPaidList):
+        func_properties[f'{ticker} Dividends paid ($M)'] = [round(ele / 100, 2) if isinstance(ele, float) else "—" for ele in list(listOperation("mul", keyDetailDict['Dividends (¢)'], keyDetailDict['Shares outstanding (m)']))]
+
+    if all(item in keyDetailDict for item in percentEbitdaList):
+        func_properties[f'{ticker} % EBDITA'] = listOperation("div", listOperation("mul", keyDetailDict['Dividends (¢)'], keyDetailDict['Shares outstanding (m)']), keyDetailDict['EBITDA (m)'])
+
+    if all(item in keyDetailDict for item in netDebtRatioList):
+        func_properties[f'{ticker} Net Debt : EBITDA'] = listOperation("div", listOperation("sub", listOperation("sum", keyDetailDict['L/T Debt'], keyDetailDict['S/T debt']), keyDetailDict['Cash']), keyDetailDict['EBITDA (m)'])
+
+    df = pd.DataFrame.from_dict(func_properties, orient="index").reset_index()
+    df.columns = database.columns
+    return df
+
+def append_functional_properties(tickers):
+    functional_property_df = pd.read_csv(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\data', 'database.csv')))
+    failed_funcs = []
+    for ticker in tqdm(tickers):
+        try:
+            functional_property_df = pd.concat([functional_property_df, getKeyDetails(ticker)])
+        except:
+            failed_funcs.append(ticker)
+    functional_property_df.drop_duplicates(subset=['Unnamed: 0'], keep="last", inplace=True)
+    functional_property_df.to_csv(f'{directory}/database.csv', header=True, index=False)
+    print(f"failed functional calcs for the following tickers: {failed_funcs}")
+
 if __name__ == '__main__':
     #Set directory
     directory = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\data'))
@@ -105,20 +226,22 @@ if __name__ == '__main__':
     #database location
     database = pd.read_csv(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\data', 'database.csv')))
 
-    #password
+    # password
     ms_password = stdiomask.getpass(prompt="Enter morningstar password: \n")
     while not bcrypt.checkpw(ms_password.encode('utf8'), config.ms_password):
         print("Invalid Password. Please try again")
         ms_password = stdiomask.getpass(prompt="Enter morningstar password: \n")
 
     # ticker list
-    # ticker_list = []
-    # for value in pd.read_csv(f'{directory}/ASXListedCompanies.csv', usecols=[1], header=None).values:
-    #     ticker_list.append(value[0])
+    ticker_list = []
+    for value in pd.read_csv(f'{directory}/ASXListedCompanies.csv', usecols=[1], header=None).values:
+        ticker_list.append(value[0])
 
-    ticker_list = ['WPL', 'CBA', 'STO', 'DEG', 'SOL']
+    # ticker_list = ['WPL', 'CBA', 'STO', 'DEG', 'SOL']
+    # ticker_list = ['HOT', 'LON']
+    # ticker_list = ['VBS']
 
-    #driver
+    driver
     options = Options()
     options.headless = True
     geckodriver = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\web_driver', 'geckodriver.exe'))
@@ -132,9 +255,10 @@ if __name__ == '__main__':
     for extension in extensions:
         driver.install_addon(extensionDirectory + extension, temporary=True)
 
-    #run functions
+    run functions
     initial_login(ms_password, ticker_list)
     get_recent_year_data(ticker_list)
+    append_functional_properties(ticker_list)
 
     # Stop Driver
     driver.quit()
