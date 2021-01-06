@@ -19,8 +19,10 @@ from Components.Tvwidget import *
 from Components.Calcinput import *
 from Components.Calcoutput import *
 from Components.Statoutput import *
+from Components.Popup import *
 from Functions.Screen import *
 from Functions.Details import *
+from tkinter import messagebox
 
 class MainApplication:
     def __init__(self, master):
@@ -46,12 +48,13 @@ class MainApplication:
         ttk.Button(self.inputFrame, text='Show Data for listing', width=20, command=self.printDetails).grid(row=2, column=0)
         ttk.Button(self.inputFrame, text='Refresh Daily Data', width=20, command=self.getDailyDetails).grid(row=3, column=0)
         ttk.Button(self.inputFrame, text='Quit', width=10, command=self.master.destroy).place(relx=0.9)
+        ttk.Button(self.inputFrame, text='Update Database', width=18, command=self.confirm).place(relx=0.9, rely=0.03)
 
         # Frame for Treeview (info)
         self.infoFrame = ttk.LabelFrame(self.tabBook, text="Stock Summary")
         self.infoFrame.place(height=370, width=640, rely=0.12)
         #Treeview widget
-        self.infoTv = Tvwidget(frame=self.infoFrame, relheight=1, relwidth=1, columns=("Item", "Value"))
+        self.infoTv = Tvwidget(frame=self.infoFrame, columns=("Item", "Value"), relheight=1, relwidth=1)
 
         #Frame for Estimates (calculations)
         self.estimateFrame = ttk.LabelFrame(self.tabBook, text="Estimated forward values")
@@ -91,13 +94,13 @@ class MainApplication:
         self.keyPerformanceFrame = ttk.LabelFrame(self.tabBook, text="Key Performance Indicators")
         self.keyPerformanceFrame.place(height=165, width=1280, rely=0.5)
         #Treeview widget
-        self.keyPerformanceTv = Tvwidget(frame=self.keyPerformanceFrame, relheight=1, relwidth=1, columns=("Item", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"), firstColWidth=250, colWidth=50)
+        self.keyPerformanceTv = Tvwidget(frame=self.keyPerformanceFrame, columns=tvcolumns, relheight=1, relwidth=1, firstColWidth=250, colWidth=100)
 
         #Frame for Details (Extended info from database)
         self.detailsFrame = ttk.LabelFrame(self.tabBook, text="Historical Performance")
         self.detailsFrame.place(height=300, width=1280, rely=0.67)
         #Treeview widget
-        self.detailTv = Tvwidget(frame=self.detailsFrame, relheight=1, relwidth=1, columns=("Item", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"), firstColWidth=250, colWidth=50)
+        self.detailTv = Tvwidget(frame=self.detailsFrame, columns=tvcolumns, relheight=1, relwidth=1, firstColWidth=250, colWidth=100)
 
         #Tab for Trend Plots
         self.trendsFrame = ttk.LabelFrame(self.tabBook, text="Plots")
@@ -197,48 +200,60 @@ class MainApplication:
             "Long-term debt ($M)"
             )
         self.screenTv = Tvwidget(self.screenOutput, 1, 1, columns, 250, 150)
+
+    def confirm(self):
+        Popup(self.master)
         
     def runEstimate(self):
-        self.medianPriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.medianValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry())/self.sharesOutstandingEntry.getEntry())
-        self.averagePriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.meanValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry())/self.sharesOutstandingEntry.getEntry())
-        self.minPriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.minValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry())/self.sharesOutstandingEntry.getEntry())
-        self.maxPriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.maxValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry())/self.sharesOutstandingEntry.getEntry())
-        self.divPaidCalc.changeText(text=self.ebitdaEntry.getEntry()*self.percentEbitdaEntry.getEntry()/100)
+        if self.tickerEntry.get() != "":
+            if all(x != "" for x in [self.ebitdaEntry.getEntry(), self.longDebtEntry.getEntry(), self.cashEntry.getEntry(), self.sharesOutstandingEntry.getEntry(), self.percentEbitdaEntry.getEntry()]):
+                self.medianPriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.medianValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry(), 2)/self.sharesOutstandingEntry.getEntry())
+                self.averagePriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.meanValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry(), 2)/self.sharesOutstandingEntry.getEntry())
+                self.minPriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.minValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry(), 2)/self.sharesOutstandingEntry.getEntry())
+                self.maxPriceCalc.changeText(text=np.round(self.ebitdaEntry.getEntry()*self.maxValueCalc.getEvValue()-self.longDebtEntry.getEntry()+self.cashEntry.getEntry(), 2)/self.sharesOutstandingEntry.getEntry())
+                self.divPaidCalc.changeText(text=self.ebitdaEntry.getEntry()*self.percentEbitdaEntry.getEntry()/100)
 
-        self.assessedDivCalc.changeText(text=100*self.divPaidCalc.getValue()/self.sharesOutstandingEntry.getEntry())
-        self.medianYieldCalc.changeText(text=f"{np.round(self.assessedDivCalc.getValue()/self.medianPriceCalc.getValue(), 2)} %")
-        self.averageYieldCalc.changeText(text=f"{np.round(self.assessedDivCalc.getValue()/self.averagePriceCalc.getValue(), 2)} %")
-        self.minYieldCalc.changeText(text=f"{np.round(self.assessedDivCalc.getValue()/self.minPriceCalc.getValue(), 2)} %")
-        self.maxYieldCalc.changeText(text=f"{np.round(self.assessedDivCalc.getValue()/self.maxPriceCalc.getValue(), 2)} %")
+                self.assessedDivCalc.changeText(text=100*self.divPaidCalc.getValue()/self.sharesOutstandingEntry.getEntry())
+                self.medianYieldCalc.changeText(text=f"{np.round(self.assessedDivCalc.getValue()/self.medianPriceCalc.getValue(), 2)} %")
+                self.averageYieldCalc.changeText(text=f"{np.round(self.assessedDivCalc.getValue()/self.averagePriceCalc.getValue(), 2)} %")
+                self.minYieldCalc.changeText(text=f"{np.round(self.assessedDivCalc.getValue()/self.minPriceCalc.getValue(), 2)} %")
+                self.maxYieldCalc.changeText(text=f"{np.round(self.assessedDivCalc.getValue()/self.maxPriceCalc.getValue(), 2)} %")
+            else:
+                messagebox.showinfo("Error", "Enter Estimates first...")
+        else:
+            messagebox.showinfo("Error", "Enter a ticker first...")
 
     def plotTrends(self):
-        sheetDict = {
-            'historical price - max': '1d',
-            'historical price - 5y': '1d',
-            'historical price - 1y': '1d',
-            'historical price - 6mo': '1d',
-            'historical price - 3mo': '1d',
-            'historical price - 1mo': '1d',
-            'historical price - 5d': '60m',
-            'historical price - 1d': '1m'
-            }    
-        try:
-            #Plot trend data for all time periods
-            trends = plt.figure()
-            trends.subplots_adjust(wspace=0.2, hspace=0.5)
-            plotpos = 1
-            for sheet in sheetDict.keys():   
-                sheetDict[sheet] = yf.download(self.tickerEntry.get()+'.AX', period=sheet.split("- ")[1], interval=sheetDict[sheet])   
-                trends.add_subplot(4, 2, plotpos, title=f"{self.tickerEntry.get()} - {sheet}", ylabel="$AUD").plot(sheetDict[sheet]['Close'])
-                plotpos += 1      
-            #Add to tinker GUI
-            chart = FigureCanvasTkAgg(trends, self.trendsFrame)
-            chart.get_tk_widget().place(relheight=0.95, relwidth=1, rely=0.05)
-        except:
-            print(f"Something went wrong retrieving {self.tickerEntry.get()} historical data")
-            print('Press enter to close...')
-            input()
-            sys.exit()
+        if self.tickerEntry.get() != "":
+            sheetDict = {
+                'historical price - max': '1d',
+                'historical price - 5y': '1d',
+                'historical price - 1y': '1d',
+                'historical price - 6mo': '1d',
+                'historical price - 3mo': '1d',
+                'historical price - 1mo': '1d',
+                'historical price - 5d': '60m',
+                'historical price - 1d': '1m'
+                }    
+            try:
+                #Plot trend data for all time periods
+                trends = plt.figure()
+                trends.subplots_adjust(wspace=0.2, hspace=0.5)
+                plotpos = 1
+                for sheet in sheetDict.keys():   
+                    sheetDict[sheet] = yf.download(self.tickerEntry.get()+'.AX', period=sheet.split("- ")[1], interval=sheetDict[sheet])   
+                    trends.add_subplot(4, 2, plotpos, title=f"{self.tickerEntry.get()} - {sheet}", ylabel="$AUD").plot(sheetDict[sheet]['Close'])
+                    plotpos += 1      
+                #Add to tinker GUI
+                chart = FigureCanvasTkAgg(trends, self.trendsFrame)
+                chart.get_tk_widget().place(relheight=0.95, relwidth=1, rely=0.05)
+            except:
+                print(f"Something went wrong retrieving {self.tickerEntry.get()} historical data")
+                print('Press enter to close...')
+                input()
+                sys.exit()
+        else:
+            messagebox.showinfo("Error", "Enter a ticker first...")
     
     def statCalc(self, statistic, list):
         try:
@@ -256,17 +271,32 @@ class MainApplication:
             return "—"
 
     def getStats(self):
-        keyDetailDict = Details(self.tickerEntry.get()).getKeyDetails()
-        self.medianValueCalc.changeCashYield(text=self.statCalc("median", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float)]))
-        self.meanValueCalc.changeCashYield(text=self.statCalc("mean", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float)]))
-        self.stdValueCalc.changeCashYield(text=self.statCalc("stdev", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float)]))
-        self.minValueCalc.changeCashYield(text=self.statCalc("min", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float)]))
-        self.maxValueCalc.changeCashYield(text=self.statCalc("max", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float)]))
-        self.medianValueCalc.changeEvValue(text=self.statCalc("median", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float)]))
-        self.meanValueCalc.changeEvValue(text=self.statCalc("mean", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float)]))
-        self.stdValueCalc.changeEvValue(text=self.statCalc("stdev", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float)]))
-        self.minValueCalc.changeEvValue(text=self.statCalc("min", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float)]))
-        self.maxValueCalc.changeEvValue(text=self.statCalc("max", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float)]))
+        keyDetailDict = Details(self.tickerEntry.get()).getDetails(database,
+                [
+                    'EBITDA (m)', 
+                    'L/T Debt', 
+                    'Market cap (m)', 
+                    'Cash', 
+                    'Dividends (¢)', 
+                    'Shares outstanding (m)', 
+                    'S/T debt', 
+                    'EV Multiple', 
+                    'Dividends paid ($M)', 
+                    'Cash Yield', 
+                    '% EBDITA', 
+                    'Net Debt : EBITDA'
+                ]
+            )
+        self.medianValueCalc.changeCashYield(text=self.statCalc("median", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float) and str(ele) != "nan"]))
+        self.meanValueCalc.changeCashYield(text=self.statCalc("mean", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float) and str(ele) != "nan"]))
+        self.stdValueCalc.changeCashYield(text=self.statCalc("stdev", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float) and str(ele) != "nan"]))
+        self.minValueCalc.changeCashYield(text=self.statCalc("min", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float) and str(ele) != "nan"]))
+        self.maxValueCalc.changeCashYield(text=self.statCalc("max", [ele for ele in keyDetailDict['Cash Yield'] if isinstance(ele, float) and str(ele) != "nan"]))
+        self.medianValueCalc.changeEvValue(text=self.statCalc("median", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float) and str(ele) != "nan"]))
+        self.meanValueCalc.changeEvValue(text=self.statCalc("mean", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float) and str(ele) != "nan"]))
+        self.stdValueCalc.changeEvValue(text=self.statCalc("stdev", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float) and str(ele) != "nan"]))
+        self.minValueCalc.changeEvValue(text=self.statCalc("min", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float) and str(ele) != "nan"]))
+        self.maxValueCalc.changeEvValue(text=self.statCalc("max", [ele for ele in keyDetailDict['EV Multiple'] if isinstance(ele, float) and str(ele) != "nan"]))
     
     def convertDictToList(self, dictionary):
         detailList = []
@@ -276,75 +306,132 @@ class MainApplication:
         return detailList
     
     def printDetails(self):
-        detailList = self.convertDictToList(Details(self.tickerEntry.get()).getDetails())
-        self.detailTv.clear()
-        for count, row in enumerate(detailList):
-            self.detailTv.insertValues([value for value in row], count)
+        if self.tickerEntry.get() != "":
+            detailList = self.convertDictToList(Details(self.tickerEntry.get()).getDetails(database,
+                [
+                    'EBITDA (m)',
+                    'EBIT (m)',
+                    'L/T Debt',
+                    'S/T debt',
+                    'Market cap (m)',
+                    'Dividends (¢)',
+                    'Dividend yield (%)',
+                    'Revenues (m)',
+                    'Net profit (m)',
+                    'Net profit margin(%)',
+                    'Capital spending (¢)',
+                    'Cash',
+                    'Net operating cashflows (m)',
+                    'Net investing cashflows (m)',
+                    'Net financing cashflows (m)',
+                    'Cash flow (¢)',
+                    'Earnings pre abs (¢)',
+                    'Book value ($)',
+                    'Average annual P/E ratio (%)',
+                    'Relative P/E (%)',
+                    'Total return (%)',
+                    'Depreciation (m)',
+                    'Amortisation (m)',
+                    'Income tax rate (%)',
+                    'Employees (thousands)',
+                    'Shareholders equity',
+                    'Return on capital (%)',
+                    'Return on equity (%)',
+                    'Payout ratio (%)',
+                    'Shares outstanding (m)'
+                ]
+            ))
+            self.detailTv.clear()
+            for count, row in enumerate(detailList):
+                self.detailTv.insertValues([value if str(value) != "nan" else "—" for value in row], count)
 
-        keyDetailList = self.convertDictToList(Details(self.tickerEntry.get()).getKeyDetails())
-        self.keyPerformanceTv.clear()
-        for count, row in enumerate(keyDetailList):
-            self.keyPerformanceTv.insertValues([value for value in row], count)
-        
-        self.getStats()
+            keyDetailList = self.convertDictToList(Details(self.tickerEntry.get()).getDetails(database,
+                [
+                    'EBITDA (m)', 
+                    'L/T Debt', 
+                    'Market cap (m)', 
+                    'Cash', 
+                    'Dividends (¢)', 
+                    'Shares outstanding (m)', 
+                    'S/T debt', 
+                    'EV Multiple', 
+                    'Dividends paid ($M)', 
+                    'Cash Yield', 
+                    '% EBDITA', 
+                    'Net Debt : EBITDA'
+                ]
+            ))
+            self.keyPerformanceTv.clear()
+            for count, row in enumerate(keyDetailList):
+                self.keyPerformanceTv.insertValues([value if str(value) != "nan" else "—" for value in row], count)
+            
+            self.getStats()
+        else:
+            messagebox.showinfo("Error", "Enter a ticker first...")
 
     def getDailyDetails(self):
-        # initialise driver
-        print("....LOADING: Starting Web Driver...")
-        options = Options()
-        options.headless = True
-        # geckodriver = os.getcwd() + '\\web_driver\\geckodriver.exe'
-        geckodriver = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\web_driver', 'geckodriver.exe'))
-        driver = webdriver.Firefox(executable_path=geckodriver, options=options)
-        # extensionDirectory = os.getcwd() + '\\web_driver\\extensions\\driver_extensions\\'
-        extensionDirectory = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\web_driver\\extensions'))
-        extensions = [
-            '\\https-everywhere@eff.org.xpi',
-            '\\uBlock0@raymondhill.net.xpi',
-        ]
-        for extension in extensions:
-            driver.install_addon(extensionDirectory + extension, temporary=True)
-        
-        #Get ticker info
-        try:
-            driver.get(f"https://www.morningstar.com.au/Stocks/NewsAndQuotes/{self.tickerEntry.get()}")
-            WebDriverWait(driver, 30).until(EC.visibility_of_element_located((By.TAG_NAME, "table")))
-        except:
-            print(f"Something went wrong loading the {self.tickerEntry.get()} morning star page!")
-            driver.quit()
-            print('Press enter to close...')
-            input()
-            sys.exit()
-        try:
-            html = driver.page_source
-            soup = BeautifulSoup(html,'html.parser')
-            detailDictionary = {}
-            detailDictionary['Name'] = driver.find_element_by_xpath("//h1[contains(@class, 'N_QHeader_b')]/label").text
-            detailDictionary['Value'] = driver.find_element_by_xpath("//div[contains(@class, 'N_QPriceLeft')]/div[1]/span/span[2]").text
-            detailDictionary['Day change cents'] = driver.find_element_by_xpath("//div[contains(@class, 'N_QPriceLeft')]/div[2]/div[2]/span[1]").text
-            detailDictionary['Day change percent'] = driver.find_element_by_xpath("//div[contains(@class, 'N_QPriceLeft')]/div[2]/div[2]/span[3]").text
-            asOfText = tk.Label(self.inputFrame, text=driver.find_element_by_class_name("N_QText").text) 
-            asOfText.grid(row=2, column=2)
-            for item in soup.findAll('td'):
-                if item.find('span') and item.find('h3'):
-                    detailDictionary[item.find('h3').text] = item.find('span').text
-            if detailDictionary['\xa0Company Profile']:
-                del detailDictionary['\xa0Company Profile']
-            detailDictionary['Market Cap'].replace("\xa0", "").replace(",", "").replace("M", "000000").replace("B", "000000000")
-            #Populate Tkinter treeview
-            self.infoTv.clear()
-            for i, item in enumerate(detailDictionary):
-                self.infoTv.insertValues((item, detailDictionary[item]), i)
-            #stop driver
-            driver.quit()
-        except:
-            print(f"Something went wrong scraping {self.tickerEntry.get()} info!")
-            driver.quit()
-            input()
-            sys.exit()
+        if self.tickerEntry.get() != "":
+            # initialise driver
+            print("....LOADING: Starting Web Driver...")
+            options = Options()
+            options.headless = True
+            # geckodriver = os.getcwd() + '\\web_driver\\geckodriver.exe'
+            geckodriver = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\web_driver', 'geckodriver.exe'))
+            driver = webdriver.Firefox(executable_path=geckodriver, options=options)
+            # extensionDirectory = os.getcwd() + '\\web_driver\\extensions\\driver_extensions\\'
+            extensionDirectory = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\web_driver\\extensions'))
+            extensions = [
+                '\\https-everywhere@eff.org.xpi',
+                '\\uBlock0@raymondhill.net.xpi',
+            ]
+            for extension in extensions:
+                driver.install_addon(extensionDirectory + extension, temporary=True)
+            
+            #Get ticker info
+            try:
+                driver.get(f"https://www.morningstar.com.au/Stocks/NewsAndQuotes/{self.tickerEntry.get()}")
+                WebDriverWait(driver, 30).until(EC.visibility_of_element_located((By.TAG_NAME, "table")))
+            except:
+                print(f"Something went wrong loading the {self.tickerEntry.get()} morning star page!")
+                driver.quit()
+                print('Press enter to close...')
+                input()
+                sys.exit()
+            try:
+                html = driver.page_source
+                soup = BeautifulSoup(html,'html.parser')
+                detailDictionary = {}
+                detailDictionary['Name'] = driver.find_element_by_xpath("//h1[contains(@class, 'N_QHeader_b')]/label").text
+                detailDictionary['Value'] = driver.find_element_by_xpath("//div[contains(@class, 'N_QPriceLeft')]/div[1]/span/span[2]").text
+                detailDictionary['Day change cents'] = driver.find_element_by_xpath("//div[contains(@class, 'N_QPriceLeft')]/div[2]/div[2]/span[1]").text
+                detailDictionary['Day change percent'] = driver.find_element_by_xpath("//div[contains(@class, 'N_QPriceLeft')]/div[2]/div[2]/span[3]").text
+                asOfText = tk.Label(self.inputFrame, text=driver.find_element_by_class_name("N_QText").text) 
+                asOfText.grid(row=2, column=2)
+                for item in soup.findAll('td'):
+                    if item.find('span') and item.find('h3'):
+                        detailDictionary[item.find('h3').text] = item.find('span').text
+                if detailDictionary['\xa0Company Profile']:
+                    del detailDictionary['\xa0Company Profile']
+                detailDictionary['Market Cap'].replace("\xa0", "").replace(",", "").replace("M", "000000").replace("B", "000000000")
+                #Populate Tkinter treeview
+                self.infoTv.clear()
+                for i, item in enumerate(detailDictionary):
+                    self.infoTv.insertValues((item, detailDictionary[item]), i)
+                #stop driver
+                driver.quit()
+            except:
+                print(f"Something went wrong scraping {self.tickerEntry.get()} info!")
+                driver.quit()
+                input()
+                sys.exit()
+        else:
+            messagebox.showinfo("Error", "Enter a ticker first...")
 
     def screen(self):
         criterion = {}
+        criterion["EV Multiple"] = self.evMultipleCriteria.getBounds()
+        criterion["Cash Yield"] = self.cashYieldCriteria.getBounds()
+        criterion["Net Debt : EBITDA"] = self.netDebtEbitdaRatioCriteria.getBounds()
         criterion["Market cap (m)"] = self.marketCapCriteria.getBounds()
         criterion["Dividends (¢)"] = self.dividendsCriteria.getBounds()
         criterion["Dividend Yield (%)"] = self.dividendYieldCriteria.getBounds()
@@ -358,21 +445,16 @@ class MainApplication:
         criterion["Return on capital (%)"] = self.returnCapitalCriteria.getBounds()
         criterion["L/T Debt"] = self.longDebtCriteria.getBounds()
 
-        functionalCriterion = {}
-        functionalCriterion["EV"] = self.evMultipleCriteria.getBounds()
-        functionalCriterion["CY"] = self.cashYieldCriteria.getBounds()
-        functionalCriterion["ND:EBITDA"] = self.netDebtEbitdaRatioCriteria.getBounds()
-
-        # database = pd.read_csv(os.getcwd() + '\\data\\database.csv') 
-        database = pd.read_csv(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\data', 'database.csv')))
-
-        screenResults = Screen(database, criterion, functionalCriterion, self.search.get(), self.sector.get()).screen()
+        # functionalCriterion = {}
+        screenResults = Screen(database, criterion, self.search.get(), self.sector.get()).screen()
 
         self.screenTv.clear()
         for count, row in enumerate(screenResults):
-            self.screenTv.insertValues([value for value in row], count)
+            self.screenTv.insertValues([value if str(value) != "nan" else "—" for value in row], count)
 
 if __name__ == "__main__":
+    database = pd.read_csv(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\data', 'database.csv')))
+    tvcolumns = ['Property'] + [x for x in database.columns[1:]]
     root = tk.Tk()
     app = MainApplication(root)
     root.mainloop()

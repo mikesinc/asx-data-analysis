@@ -8,4 +8,7 @@ class Calcinput:
         self.input.grid(row=row, column=col+1)
 
     def getEntry(self):
-        return float(self.input.get())
+        try:
+            return float(self.input.get())
+        except:
+            return ""

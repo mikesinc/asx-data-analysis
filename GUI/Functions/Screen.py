@@ -3,10 +3,9 @@ from Functions.Details import *
 import statistics
 
 class Screen:
-    def __init__(self, database, criterion, functionalCriterion, searchType, sector):
+    def __init__(self, database, criterion, searchType, sector):
         self.database = database
         self.criterion = criterion
-        self.functionalCriterion = functionalCriterion
         self.searchType = searchType
         self.sector = sector
 
@@ -54,10 +53,12 @@ class Screen:
                         if self.searchType == 2: #if search type is average of all years since 2010 (search type == 2), get average value
                             values = []
                             for value in row[1:]:
-                                if not value == "—":
+                                if not value == "—" and str(value) != "nan":
                                     values.append(round(float(value), 2))
                             if len(values):
                                 value = round(statistics.mean(values), 2)
+                            else:
+                                value = "—"
                         else:
                             value = row[-1] if str(row[-1]) != "nan" else row[-2]
                         self.checkBounds(value, self.criterion[Property]['max'], self.criterion[Property]['min'], self.criterion[Property]['screened'], row[0].split(" ")[0])      
@@ -68,41 +69,6 @@ class Screen:
             for Property in self.criterion.keys():
                 if not Property in tickerProps[ticker]:
                     self.checkBounds("—", self.criterion[Property]['max'], self.criterion[Property]['min'], self.criterion[Property]['screened'], ticker)
-
-    def functionalScreen(self, tickers):
-        for ticker in tickers:
-            keyDetailDict = Details(ticker).getKeyDetails()
-            if self.searchType == 1:
-                try:
-                    cashYield = keyDetailDict["Cash Yield"][-1] if str(keyDetailDict["Cash Yield"][-1]) != "nan" else keyDetailDict["Cash Yield"][-2]
-                except:
-                    cashYield = "—"
-                try:
-                    evMultiple = keyDetailDict["EV Multiple"][-1] if str(keyDetailDict["EV Multiple"][-1]) != "nan" else keyDetailDict["EV Multiple"][-2]
-                except:
-                    evMultiple = "—"
-                try:
-                    netDebtEbitdaRatio = keyDetailDict["Net Debt : EBITDA"][-1] if str(keyDetailDict["Net Debt : EBITDA"][-1]) != "nan" else keyDetailDict["Net Debt : EBITDA"][-2]
-                except:
-                    netDebtEbitdaRatio = "—"
-            else:
-                try:
-                    cashYield = round(sum([ele for ele in keyDetailDict["Cash Yield"] if isinstance(ele, float)])/len([ele for ele in keyDetailDict["Cash Yield"] if isinstance(ele, float)]), 2)
-                except:
-                    cashYield = "—"
-                try: 
-                    evMultiple = round(sum([ele for ele in keyDetailDict["EV Multiple"] if isinstance(ele, float)])/len([ele for ele in keyDetailDict["EV Multiple"] if isinstance(ele, float)]), 2)
-                except:
-                    evMultiple = "—"
-                try:
-                    netDebtEbitdaRatio = round(sum([ele for ele in keyDetailDict["Net Debt : EBITDA"] if isinstance(ele, float)])/len([ele for ele in keyDetailDict["Net Debt : EBITDA"] if isinstance(ele, float)]), 2)
-                except:
-                    netDebtEbitdaRatio = "—"
-
-            #check against criteria
-            self.checkBounds(cashYield, self.functionalCriterion['CY']['max'], self.functionalCriterion['CY']['min'], self.functionalCriterion['CY']['screened'], ticker)
-            self.checkBounds(evMultiple, self.functionalCriterion['EV']['max'], self.functionalCriterion['EV']['min'], self.functionalCriterion['EV']['screened'], ticker)
-            self.checkBounds(netDebtEbitdaRatio, self.functionalCriterion['ND:EBITDA']['max'], self.functionalCriterion['ND:EBITDA']['min'], self.functionalCriterion['ND:EBITDA']['screened'], ticker)
 
     def sectorScreen(self, tickers, listings):
         sectorFilteredTickers = [] #Redefine as empty list to be filled with tickers matching sector
@@ -138,19 +104,11 @@ class Screen:
         for Property in self.criterion.keys():
             screenedLists.append(self.criterion[Property]['screened'])
         screenedTickers = sorted(list(set(screenedLists[0]).intersection(*screenedLists)))
-        print("ticker list after basic: ", len(screenedTickers))
-
-        self.functionalScreen(screenedTickers)
-        for Property in self.functionalCriterion.keys():
-            screenedLists.append(self.functionalCriterion[Property]['screened'])
-        screenedTickers = sorted(list(set(screenedLists[0]).intersection(*screenedLists)))
-        print("ticker list after functional: ", len(screenedTickers))
+        print("ticker list after screen: ", len(screenedTickers))
 
         rows = []
         for ticker in screenedTickers:
             row = [listings[ticker][0], ticker, listings[ticker][1]]
-            for Property in self.functionalCriterion.keys():
-                row.append(self.functionalCriterion[Property]['screened'][ticker])
             for Property in self.criterion.keys():
                 row.append(self.criterion[Property]['screened'][ticker])
             rows.append(row)
