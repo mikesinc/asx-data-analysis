@@ -202,7 +202,7 @@ class MainApplication:
         self.screenTv = Tvwidget(self.screenOutput, 1, 1, columns, 250, 150)
 
     def confirm(self):
-        Popup(self.master)
+        Popup()
         
     def runEstimate(self):
         if self.tickerEntry.get() != "":

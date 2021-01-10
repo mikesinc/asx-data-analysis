@@ -21,13 +21,14 @@ def kill_proc_tree(pid, including_parent=False):
         parent.wait(5)
 
 class Popup:
-    def __init__(self, root):
+    def __init__(self):
         self.popup = tk.Toplevel()
         self.popup.title("Update Database")
         self.popup.geometry("800x250")
         self.popup.pack_propagate(False)
         self.popup.resizable(0, 0)    
-        self.root = root
+
+        self.popup.protocol('WM_DELETE_WINDOW', self.on_closing)
 
         tk.Label(self.popup, text="This process will scrape the latest financial year data into the database and should hence only need to be done once a year.").pack()
         tk.Label(self.popup, text="This process may take up to 2 hours to complete. Recommended to not proceed unless necessary.").pack()
@@ -43,12 +44,15 @@ class Popup:
 
         self.console = ConsoleFrame(self.popup)
         self.console.size().pack()
+    
+    def on_closing(self):
+        proc = os.getpid()
+        kill_proc_tree(proc)
+        self.popup.destroy()
 
     def cancel(self):
         try:
-            proc = os.getpid()
-            kill_proc_tree(proc)
-            self.popup.destroy()
+            self.on_closing()
         except:
             self.popup.destroy()
 
@@ -65,20 +69,17 @@ class Popup:
             self.console.get_textbox().delete("1.0", tk.END)
             self.console.get_textbox()['state'] = 'disabled'
 
-        # self.proc = subprocess.Popen([
-        #         sys.executable, os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\Functions', 'scrape.py')), 
-        #         config.ms_username.encode(), 
-        #         self.pw.get().encode(),
-        #         directory,
-        #         database,
-        #         geckodriver
-        #     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
         self.proc = subprocess.Popen([
-                os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\Functions', 'scrape.exe')), 
+                sys.executable, os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\Functions', 'scrape.py')), 
                 config.ms_username.encode(), 
-                self.pw.get().encode()
+                self.pw.get().encode(),
             ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # self.proc = subprocess.Popen([
+        #         os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\Functions', 'scrape.exe')), 
+        #         config.ms_username.encode(), 
+        #         self.pw.get().encode()
+        #     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # self.proc = subprocess.Popen([
         #     os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\Functions', 'scrape.exe')), config.ms_username.encode(), self.pw.get().encode()
