@@ -10,7 +10,7 @@ class ConsoleFrame:
         # show subprocess' stdout in GUI
         self.scrollbar = tk.Scrollbar(self.ConsoleFrame, orient='horizontal')
         self.scrollbar.pack(side='bottom', fill='x', expand='false')
-        self.text = tk.Text(self.ConsoleFrame, wrap='none', xscrollcommand=self.scrollbar.set)
+        self.text = tk.Text(self.ConsoleFrame, wrap='none', xscrollcommand=self.scrollbar.set, state='normal')
         self.text.pack(fill='x')
         self.scrollbar.config(command=self.text.xview)
     

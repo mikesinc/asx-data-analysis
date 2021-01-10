@@ -40,15 +40,18 @@ class SubProcess:
         """Update GUI with items from the queue."""
         for line in iter_except(q.get_nowait, Empty): # display all content
             if line is None:
-                # self.quit()
+                self.quit()
+                self.textbox['state'] = 'disabled'
                 return
-            # else:
-            self.textbox.insert("end", line)  # update GUI
-            self.textbox.see("end")
-            break # display no more than one line per 40 milliseconds
+            else:
+                self.textbox['state'] = 'normal'
+                self.textbox.delete("1.0", tk.END)
+                self.textbox.insert("end", line)  # update GUI
+                self.textbox.see("end")
+                break # display no more than one line per 40 milliseconds
         self.root.after(40, self.update, q) # schedule next update
 
     def quit(self):
         self.process.kill() # exit subprocess if GUI is closed (zombie!)
-        self.root.destroy()
+    #     self.root.destroy()
         

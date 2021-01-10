@@ -3,11 +3,12 @@ from Functions.Details import *
 import statistics
 
 class Screen:
-    def __init__(self, database, criterion, searchType, sector):
+    def __init__(self, database, ASX_tickerlist, criterion, searchType, sector):
         self.database = database
         self.criterion = criterion
         self.searchType = searchType
         self.sector = sector
+        self.ASX_tickerlist = ASX_tickerlist
 
     def checkEntry(self, entry):
         try:
@@ -86,7 +87,7 @@ class Screen:
         #Go through full ASX listing and extract name and sector of those listings which have data in database
         listings = {}
         # for name, ticker, sector in pd.read_csv(os.getcwd() + '\\data\\ASXListedCompanies.csv', usecols=[0, 1, 2], header=None).values:
-        for name, ticker, sector in pd.read_csv(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\..\\data', 'ASXListedCompanies.csv')), usecols=[0, 1, 2], header=None).values:
+        for name, ticker, sector in pd.read_csv(self.ASX_tickerlist, usecols=[0, 1, 2], header=None).values:
             if ticker in screenedTickers:
                 listings[ticker] = name, sector
         print("ticker list unfiltered: ", len(screenedTickers), len(listings.keys()))

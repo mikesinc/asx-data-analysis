@@ -376,6 +376,7 @@ class MainApplication:
             options = Options()
             options.headless = True
             # geckodriver = os.getcwd() + '\\web_driver\\geckodriver.exe'
+            # Geckodriver library modified to ensures NO CMD window is opened with geckodriver
             geckodriver = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\web_driver', 'geckodriver.exe'))
             driver = webdriver.Firefox(executable_path=geckodriver, options=options)
             # extensionDirectory = os.getcwd() + '\\web_driver\\extensions\\driver_extensions\\'
@@ -446,7 +447,7 @@ class MainApplication:
         criterion["L/T Debt"] = self.longDebtCriteria.getBounds()
 
         # functionalCriterion = {}
-        screenResults = Screen(database, criterion, self.search.get(), self.sector.get()).screen()
+        screenResults = Screen(database, ASXtickerlist, criterion, self.search.get(), self.sector.get()).screen()
 
         self.screenTv.clear()
         for count, row in enumerate(screenResults):
@@ -454,6 +455,7 @@ class MainApplication:
 
 if __name__ == "__main__":
     database = pd.read_csv(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\data', 'database.csv')))
+    ASXtickerlist = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\data', 'ASXListedCompanies.csv'))
     tvcolumns = ['Property'] + [x for x in database.columns[1:]]
     root = tk.Tk()
     app = MainApplication(root)

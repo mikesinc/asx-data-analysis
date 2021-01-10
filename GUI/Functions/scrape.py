@@ -7,14 +7,33 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
-import bcrypt
-import config
 import time
 import os
 from bs4 import BeautifulSoup
-import stdiomask
-from tqdm import tqdm
 import numpy as np
+import sys
+
+# Print iterations progress
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', flush=True)
+    # Print New Line on Complete
+    if iteration == total: 
+        print('', flush=True)
 
 def convertDictToList(dictionary):
     detailList = []
@@ -45,14 +64,14 @@ def initial_login(password, tickers):
         WebDriverWait(driver, 30).until(lambda d: d.find_element_by_id('loginButton'))
         driver.find_element_by_id('loginButton').click()
         WebDriverWait(driver, 30).until(lambda d: d.find_element_by_id('loginFormNew'))
-        driver.find_element_by_xpath("//input[contains(@type, 'email')]").send_keys(config.ms_username)
+        driver.find_element_by_xpath("//input[contains(@type, 'email')]").send_keys(sys.argv[1])
         driver.find_element_by_xpath("//input[contains(@type, 'password')]").send_keys(password)
         time.sleep(5)
         driver.find_element_by_xpath("//input[contains(@id, 'LoginSubmit')]").click()
         time.sleep(5)
-        print("Morningstar login successful!") 
+        print("Morningstar Login Successful!", flush=True) 
     except Exception as e: 
-        print(e) 
+        print(e, flush=True) 
         driver.quit()
         quit()
 
@@ -88,7 +107,8 @@ def data_scrape_page_two(ticker):
 def get_recent_year_data(tickers):
     page_one_failed_tickers = []
     page_two_failed_tickers = []
-    for ticker in tqdm(tickers):
+    printProgressBar(0, len(tickers), prefix = 'Progress:', suffix = 'Complete', length = 50)
+    for i, ticker in enumerate(tickers):
         try:
             most_recent_year, per_share_recent_year, historical_financials_recent_year, cash_flows_recent_year = data_scrape_page_one(ticker)
         except:
@@ -107,11 +127,11 @@ def get_recent_year_data(tickers):
                 cash_recent_year
             ])
             #Updating existing DB with most recent year info
-            update_db(ticker, most_recent_year, recent_data)
+        printProgressBar(i + 1, len(tickers), prefix = 'Progress:', suffix = 'Complete', length = 50)
         
     database.to_csv(f'{directory}/database.csv', header=True, index=False)
-    print(f"failed loading page one for the following tickers: {page_one_failed_tickers}")
-    print(f"failed loading page two for the following tickers: {page_two_failed_tickers}")
+    print(f"failed loading page one for the following tickers: {page_one_failed_tickers}", flush=True)
+    print(f"failed loading page two for the following tickers: {page_two_failed_tickers}", flush=True)
 
 def update_db(ticker, year, recent_data):
     column_to_update = '20' + year
@@ -206,32 +226,32 @@ def getKeyDetails(ticker):
     return df
 
 def append_functional_properties(tickers):
-    functional_property_df = pd.read_csv(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\data', 'database.csv')))
+    new_database = pd.read_csv(os.path.abspath(os.path.join(os.path.dirname(resource_path(__file__)), '..\\..\\data\\database.csv')))
+    functional_property_df = new_database
     failed_funcs = []
-    for ticker in tqdm(tickers):
+    printProgressBar(0, len(tickers), prefix = 'Progress:', suffix = 'Complete', length = 50)
+    for i, ticker in enumerate(tickers):
         try:
             functional_property_df = pd.concat([functional_property_df, getKeyDetails(ticker)])
         except:
             failed_funcs.append(ticker)
+        printProgressBar(i + 1, len(tickers), prefix = 'Progress:', suffix = 'Complete', length = 50)
     functional_property_df.drop_duplicates(subset=['Unnamed: 0'], keep="last", inplace=True)
     functional_property_df.to_csv(f'{directory}/database.csv', header=True, index=False)
-    print(f"failed functional calcs for the following tickers: {failed_funcs}")
+    print(f"failed functional calcs for the following tickers: {failed_funcs}", flush=True)
+
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 
 if __name__ == '__main__':
+    print("logging in...", flush=True)
     #Set directory
-    directory = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\data'))
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
+    directory = os.path.abspath(os.path.join(os.path.dirname(resource_path(__file__)), '..\\..\\data'))
     #database location
-    database = pd.read_csv(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\data', 'database.csv')))
-
-    # password
-    ms_password = stdiomask.getpass(prompt="Enter morningstar password: \n")
-    while not bcrypt.checkpw(ms_password.encode('utf8'), config.ms_password):
-        print("Invalid Password. Please try again")
-        ms_password = stdiomask.getpass(prompt="Enter morningstar password: \n")
-
+    database = pd.read_csv(os.path.abspath(os.path.join(os.path.dirname(resource_path(__file__)), '..\\..\\data\\database.csv')))
+    
     # ticker list
     ticker_list = []
     for value in pd.read_csv(f'{directory}/ASXListedCompanies.csv', usecols=[1], header=None).values:
@@ -241,12 +261,13 @@ if __name__ == '__main__':
     # ticker_list = ['HOT', 'LON']
     # ticker_list = ['VBS']
 
-    driver
+    # driver
     options = Options()
     options.headless = True
-    geckodriver = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\web_driver', 'geckodriver.exe'))
+    # Geckodriver library modified to ensures NO CMD window is opened with geckodriver
+    geckodriver = os.path.abspath(os.path.join(os.path.dirname(resource_path(__file__)), '..\\..\\web_driver\\geckodriver.exe'))
     driver = webdriver.Firefox(executable_path=geckodriver, options=options)
-    extensionDirectory = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..\\web_driver\\extensions'))
+    extensionDirectory = os.path.abspath(os.path.join(os.path.dirname(resource_path(__file__)), '..\\..\\web_driver\\extensions', ))
     extensions = [
         '\\https-everywhere@eff.org.xpi',
         '\\uBlock0@raymondhill.net.xpi',
@@ -255,8 +276,8 @@ if __name__ == '__main__':
     for extension in extensions:
         driver.install_addon(extensionDirectory + extension, temporary=True)
 
-    run functions
-    initial_login(ms_password, ticker_list)
+    #run functions
+    initial_login(sys.argv[2], ticker_list)
     get_recent_year_data(ticker_list)
     append_functional_properties(ticker_list)
 

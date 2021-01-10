@@ -5,6 +5,9 @@ config.py
 /driver_extensions
 /env
 /web_driver
+/build
+/driver_extensions
+*.spec
 __pycache__
 *.xlsm
 *.zip
